@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    
 }
 
 android {
@@ -53,4 +55,14 @@ dependencies {
     //ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
+
+    //Json to Model and viceversa
+    implementation(libs.kotlinx.serialization.json)
+
+    //Datastore
+    implementation(libs.androidx.datastore.preferences)
+
+
+
+
 }

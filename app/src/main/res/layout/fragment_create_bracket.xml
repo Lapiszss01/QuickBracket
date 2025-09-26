@@ -27,6 +27,24 @@
                 android:maxLength="50"/>
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/type_input_layout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/create_bracket_type_label">
+
+            <AutoCompleteTextView
+                android:id="@+id/bracket_type_auto_complete_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                tools:text="SingleElimination" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <Button
             android:id="@+id/create_bracket_button"
             android:layout_width="match_parent"

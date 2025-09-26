@@ -12,9 +12,9 @@ class BracketRepository(context: Context) {
     private val dataStoreManager = BracketDataStoreManager(context)
     val allBrackets: Flow<List<Bracket>> = dataStoreManager.getBracketList
 
-    suspend fun addBracket(newBracketName: String) {
+    suspend fun addBracket(newBracketName: String, newBracketType:String) {
 
-        val newBracket = Bracket(name = newBracketName)
+        val newBracket = Bracket(name = newBracketName, type = newBracketType)
         val currentList = dataStoreManager.getBracketList.first()
 
         val updatedList = currentList.toMutableList().apply {

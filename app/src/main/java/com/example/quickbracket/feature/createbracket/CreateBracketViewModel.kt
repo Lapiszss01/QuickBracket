@@ -24,20 +24,20 @@ class BracketViewModel(application: Application) : AndroidViewModel(application)
     private val _bracketCreated = MutableLiveData<Boolean>()
     val bracketCreated: LiveData<Boolean> = _bracketCreated
 
-    fun saveNewBracket(name: String) {
-        if (name.isBlank()) {
-            _statusMessage.value = "El nombre del Bracket no puede estar vacío."
+    fun saveNewBracket(name: String, type: String) {
+        if (name.isBlank() || type.isBlank()) {
+            _statusMessage.value = "Must not leave any field blank."
             return
         }
 
         viewModelScope.launch {
             try {
                 // El repositorio se encarga de leer, añadir y guardar la lista completa.
-                repository.addBracket(name)
-                _statusMessage.postValue("Bracket '$name' creado y lista actualizada.")
+                repository.addBracket(name,type)
+                _statusMessage.postValue("Bracket '$name' created.")
                 _bracketCreated.postValue(true)
             } catch (e: Exception) {
-                _statusMessage.postValue("Error al guardar: ${e.message}")
+                _statusMessage.postValue("Error saving: ${e.message}")
                 _bracketCreated.postValue(false)
 
             }

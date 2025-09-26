@@ -27,7 +27,7 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
             // TODO: Configura el listener de clic aquí si lo necesitas
             itemView.setOnClickListener {
                 // Navegar a la vista de detalle del Bracket usando bracket.id
-                Log.d("Home",bracket.name)
+                Log.d("Home","Nombre: ${bracket.name} Tipo:${bracket.type} Sets:${bracket.sets}")
             }
         }
     }

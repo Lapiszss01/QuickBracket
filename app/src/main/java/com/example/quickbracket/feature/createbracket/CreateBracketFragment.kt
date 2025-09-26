@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.viewModels
 import com.example.quickbracket.R
@@ -23,6 +24,12 @@ class CreateBracketFragment : Fragment() {
     private var _binding: FragmentCreateBracketBinding? = null
     private val binding get() = _binding!!
 
+    enum class BracketType {
+        //SingleElimination,
+        DoubleElimination,
+        //RoundRobin
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -34,9 +41,18 @@ class CreateBracketFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val bracketTypes = BracketType.entries.map { it.name }
+        val adapter = ArrayAdapter(
+            requireContext(), // Usa 'this' si estás en una Activity
+            android.R.layout.simple_dropdown_item_1line, // Layout estándar para los ítems
+            bracketTypes
+        )
+        binding.bracketTypeAutoCompleteTextView.setAdapter(adapter)
+
         binding.createBracketButton.setOnClickListener {
             val bracketName = binding.bracketNameEditText.text.toString()
-            bracketViewModel.saveNewBracket(bracketName)
+            val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
+            bracketViewModel.saveNewBracket(bracketName,bracketType)
         }
 
         // Observa el mensaje de estado para retroalimentación

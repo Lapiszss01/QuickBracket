@@ -29,10 +29,7 @@ class MainActivity : AppCompatActivity() {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        binding.fab.setOnClickListener { view ->
-            Log.d("Home","fab button")
-            navController.navigate(R.id.action_HomeFragment_to_CreateBracketFragment)
-        }
+
 
 
     }

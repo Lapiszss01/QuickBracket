@@ -1,6 +1,7 @@
 package com.example.quickbracket.feature.createbracket
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -33,37 +34,25 @@ class CreateBracketFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. Manejar el evento del botón
         binding.createBracketButton.setOnClickListener {
-            registerBracket()
+            val bracketName = binding.bracketNameEditText.text.toString()
+            bracketViewModel.saveNewBracket(bracketName)
         }
-        // 2. Observar el LiveData del ViewModel
-        observeViewModel()
 
-    }
-
-    private fun registerBracket() {
-        val bracketName = binding.bracketNameEditText.text.toString()
-        bracketViewModel.createNewBracket(bracketName)
-    }
-
-    private fun observeViewModel() {
+        // Observa el mensaje de estado para retroalimentación
         bracketViewModel.statusMessage.observe(viewLifecycleOwner) { message ->
             if (message.isNotEmpty()) {
-                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                binding.bracketNameEditText.text?.clear()
             }
         }
 
-        bracketViewModel.createdBracket.observe(viewLifecycleOwner) { bracket ->
-            bracket?.let {
+        bracketViewModel.bracketCreated.observe(viewLifecycleOwner){ created ->
+            if(created){
                 findNavController().navigate(R.id.action_CreateBracketFragment_to_HomeFragment)
-                bracketViewModel.doneCreatingBracket()
             }
         }
+
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
 }

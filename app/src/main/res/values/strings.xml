@@ -46,4 +46,6 @@
     </string>
     <string name="create_bracket_register_name">Bracket\'s name</string>
     <string name="general_create">CREATE</string>
+    <string name="home_my_brackets">My brackets</string>
+    <string name="home_not_bracket_created">You don\'t have any saved Brackets yet. Go to the \'Create\' section to start.</string>
 </resources>

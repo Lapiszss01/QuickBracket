@@ -12,10 +12,9 @@ import com.example.quickbracket.model.Bracket
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.navigation.findNavController
 
 class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(BracketDiffCallback()) {
-
-    private val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
     class BracketViewHolder(private val binding: ItemBracketBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -26,13 +25,17 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
 
             // TODO: Configura el listener de clic aquí si lo necesitas
             itemView.setOnClickListener {
-                // Navegar a la vista de detalle del Bracket usando bracket.id
+
+                val action = HomeFragmentDirections.actionHomeFragmentToBracketDetailsFragment(
+                    bracketId = bracket.id
+                )
+                // 2. Navega con la acción generada
+                itemView.findNavController().navigate(action)
                 Log.d("Home","Nombre: ${bracket.name} Tipo:${bracket.type} Sets:${bracket.sets}")
             }
         }
     }
 
-    // 2. onCreateViewHolder: Infla el layout del elemento de lista
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BracketViewHolder {
         val binding = ItemBracketBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -42,14 +45,12 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
         return BracketViewHolder(binding)
     }
 
-    // 3. onBindViewHolder: Une los datos a las vistas
     override fun onBindViewHolder(holder: BracketViewHolder, position: Int) {
         val bracket = getItem(position)
         holder.bind(bracket)
     }
 }
 
-// 4. DiffUtil: Mejora el rendimiento del RecyclerView
 class BracketDiffCallback : DiffUtil.ItemCallback<Bracket>() {
     override fun areItemsTheSame(oldItem: Bracket, newItem: Bracket): Boolean {
         // Comprueba si son el mismo Bracket (usando el ID único)

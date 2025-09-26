@@ -14,16 +14,32 @@
         <action
             android:id="@+id/action_HomeFragment_to_CreateBracketFragment"
             app:destination="@id/CreateBracketFragment" />
+
+        <action
+            android:id="@+id/action_HomeFragment_to_BracketDetailsFragment"
+            app:destination="@id/BrackeDetailstFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/CreateBracketFragment"
-        android:name="com.example.quickbracket.feature.createbracket.CreateBracketFragment"
+        android:name="com.example.quickbracket.feature.create_bracket.CreateBracketFragment"
         android:label="@string/create_bracket_fragment_label"
         tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_CreateBracketFragment_to_HomeFragment"
             app:destination="@id/HomeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/BrackeDetailstFragment"
+        android:name="com.example.quickbracket.feature.bracket_details.BracketDetailsFragment"
+        android:label="@string/bracket_details_label"
+        tools:layout="@layout/fragment_bracket_details">
+
+        <argument
+            android:name="bracketId"
+            app:argType="string" />
+
     </fragment>
 
 

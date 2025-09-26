@@ -1,9 +1,7 @@
-package com.example.quickbracket.feature.createbracket
+package com.example.quickbracket.feature.create_bracket
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.quickbracket.data.repository.BracketRepository

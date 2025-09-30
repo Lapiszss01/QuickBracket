@@ -8,5 +8,10 @@ data class Bracket(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val type: String,
-    val sets: List<Set> = emptyList()
+    val sets: List<MatchSet> = emptyList()
 )
+
+enum class BracketPath {
+    WINNERS,
+    LOSERS
+}

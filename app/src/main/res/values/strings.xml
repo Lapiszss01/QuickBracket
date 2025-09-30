@@ -51,4 +51,6 @@
     <string name="create_bracket_type_label">Bracket type</string>
     <string name="bracket_details_label">Bracket Details\n</string>
     <string name="create_bracket_player_number">Player count</string>
+    <string name="player_name_label">Player name</string>
+    <string name="create_bracket_random_seeding">Random seeding</string>
 </resources>

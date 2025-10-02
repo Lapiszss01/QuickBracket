@@ -14,6 +14,7 @@ import android.util.Log
 import com.example.quickbracket.R
 import com.example.quickbracket.databinding.FragmentCreateBracketBinding
 import androidx.navigation.fragment.findNavController
+import com.example.quickbracket.model.Bracket
 import com.example.quickbracket.model.BracketPath
 import com.example.quickbracket.model.MatchSet
 import com.example.quickbracket.model.Player
@@ -33,8 +34,8 @@ class CreateBracketFragment : Fragment() {
     private val playerViews = mutableListOf<View>()
 
     enum class BracketType {
-        //SingleElimination,
-        DoubleElimination,
+        SingleElimination,
+        //DoubleElimination,
         //RoundRobin
     }
 
@@ -71,17 +72,18 @@ class CreateBracketFragment : Fragment() {
             //Data
             val bracketName = binding.bracketNameEditText.text.toString()
             val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
-            val playerCount = binding.etPlayerCount.text
             //Players
             val players = getRegisteredPlayerNames()
-            val winnersSets = generateWinnersBracket(players.count())
-            val losetsSet = generateLosersBracket(players.count())
+            val bracketSets = generateSingleEliminationBracket(players.count())
 
+            val finalBracket = Bracket(name = bracketName, type = bracketType, sets = bracketSets)
+            bracketViewModel.saveNewBracket(finalBracket)
 
-            Log.d("BracketCreation", "Winnerbracket:${losetsSet.count()}")
+            Log.d("BrackedCreation", "Rondas: ${bracketSets.count()}")
+            for (b in bracketSets){
+                Log.d("BrackedCreation", "Ronda: ${b}")
+            }
 
-
-            //bracketViewModel.saveNewBracket(bracketName,bracketType)
         }
 
         // Observes messages
@@ -141,122 +143,73 @@ class CreateBracketFragment : Fragment() {
         return players
     }
 
-    fun generateWinnersBracket(playerCount: Int): List<MatchSet> {
+    fun generateSingleEliminationBracket(playerCount: Int): List<MatchSet> {
         if (playerCount <= 1) return emptyList()
 
+        // 1. Determinar el tamaño de la llave y los BYEs
         var bracketSize = 1
         while (bracketSize < playerCount) {
             bracketSize *= 2
         }
+        val byes = bracketSize - playerCount
 
-        var setsInCurrentRound = bracketSize / 2
-        val wbSets = mutableListOf<MatchSet>()
+        val allSets = mutableListOf<MatchSet>()
         var nextSetId = 1
-        var nextParentSetId = setsInCurrentRound + 1
-        var currentRound = 1
 
+        // 2. Calcular los sets reales en la primera ronda
+        // La primera ronda solo tiene partidos para los jugadores que NO tienen un BYE.
+        // Ej: N=5, bracketSize=8, byes=3. Partidos reales: (5 - 3) / 2 = 1.
+        var setsInCurrentRound = (playerCount - byes) / 2
+
+        // Si la fórmula da 0 o menos, significa que hay muchos BYEs y los partidos empezarán más tarde.
+        // Este caso se corrige en el bucle principal.
+        if (setsInCurrentRound < 1 && playerCount > 1) {
+            setsInCurrentRound = playerCount - (bracketSize / 2)
+            if (setsInCurrentRound <= 0) setsInCurrentRound = 1 // Caso N=3: 1 partido real.
+        }
+
+        var roundCounter = 1
+
+        // 3. Generar las rondas hasta que solo quede el set final
         while (setsInCurrentRound >= 1) {
             val roundName = when (setsInCurrentRound) {
-                1 -> "Final WB"
-                2 -> "Semifinales WB"
-                4 -> "Cuartos de Final WB"
-                else -> "Ronda WB $currentRound"
+                1 -> "Final"
+                2 -> "Semifinales"
+                4 -> "Cuartos de Final"
+                else -> "Ronda $roundCounter"
             }
 
-            var parentSetId = nextParentSetId
+            val currentRoundSets = mutableListOf<MatchSet>()
+            val setsStartId = nextSetId
+            val setsEndId = nextSetId + setsInCurrentRound - 1
 
             for (i in 0 until setsInCurrentRound) {
-                val currentParentId: Int? = if (setsInCurrentRound > 1) {
-                    if (i % 2 == 0) {
-                        val id = parentSetId
-                        parentSetId++
-                        id
-                    } else {
-                        parentSetId - 1
-                    }
+                val currentId = nextSetId++
+
+                // Asignación de parentSetId (dónde va el ganador)
+                val parentId: Int? = if (setsInCurrentRound > 1) {
+                    // Los sets se agrupan en pares que alimentan al siguiente set.
+                    // El ganador va al set de la siguiente ronda.
+                    setsEndId + 1 + (i / 2)
                 } else {
-                    null
+                    null // El ganador de la final no tiene set padre (es el campeón)
                 }
 
-                val newSet = MatchSet(
-                    setId = nextSetId,
-                    parentSetId = currentParentId,
+                currentRoundSets.add(MatchSet(
+                    setId = currentId,
                     roundName = roundName,
-                    path = BracketPath.WINNERS,
-                    // loserDropSetId se asignará después
-                )
-
-                wbSets.add(newSet)
-                nextSetId++
+                    parentSetId = parentId
+                ))
             }
 
-            nextParentSetId = nextSetId
+            allSets.addAll(currentRoundSets)
+
+            // La siguiente ronda siempre tendrá la mitad de partidos.
             setsInCurrentRound /= 2
-            currentRound++
-        }
-        return wbSets.toList()
-    }
-
-    fun generateLosersBracket(wbSetCount: Int): List<MatchSet> {
-        if (wbSetCount <= 2) return emptyList() // Necesita al menos R1 y R2 de WB
-
-        // El número de jugadores que caen es el mismo que el de sets en el WB
-        val setsInWBRound1 = (wbSetCount + 1) / 2
-        val totalLBSets = wbSetCount - 2 // Total de partidos del LB sin la Gran Final
-
-        var setsInCurrentRound = setsInWBRound1 / 2 // La primera ronda del LB (LB Round 1)
-        val lbSets = mutableListOf<MatchSet>()
-
-        // El set ID debe continuar a partir del último ID usado en el WB
-        var nextSetId = wbSetCount + 1
-
-        var currentRound = 1
-        var currentPhase = 1 // 1: Fase de Caída (Drop-in), 2: Fase de Emparejamiento
-
-        while (lbSets.size < totalLBSets) {
-
-            val phaseName = if (currentPhase == 1) "Caída" else "Emparejamiento"
-            val roundName = "Ronda LB $currentRound ($phaseName)"
-
-            // Número de sets a crear en esta ronda
-            val numSets = if (currentPhase == 1) setsInCurrentRound else setsInCurrentRound / 2
-
-            // Asignación de IDs de set padre para esta fase (muy complejo, simplificamos aquí)
-            var parentSetId = nextSetId + numSets // El ID del set que le sigue
-
-            for (i in 0 until numSets) {
-
-                // Lógica de ID de Padre simplificada: cada set avanza al set inmediatamente posterior
-                // en la lista, si no es el último.
-                val currentParentId: Int? = if (lbSets.size < totalLBSets - 1) {
-                    // Si esta fase es de Caída, avanza al set de Emparejamiento de la misma ronda
-                    if (currentPhase == 1) nextSetId + numSets else parentSetId++
-                } else {
-                    null // El último set del LB avanza a la Gran Final
-                }
-
-                val newSet = MatchSet(
-                    setId = nextSetId,
-                    parentSetId = currentParentId,
-                    roundName = roundName,
-                    path = BracketPath.LOSERS
-                )
-
-                lbSets.add(newSet)
-                nextSetId++
-            }
-
-            if (currentPhase == 2) {
-                // Después de la fase de emparejamiento, el número de sets se reduce a la mitad
-                setsInCurrentRound /= 2
-                currentRound++
-            }
-
-            // Alternar entre las dos fases
-            currentPhase = if (currentPhase == 1) 2 else 1
+            roundCounter++
         }
 
-        return lbSets.toList()
+        return allSets.toList()
     }
 
 }

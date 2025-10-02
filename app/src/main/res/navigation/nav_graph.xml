@@ -37,8 +37,8 @@
         tools:layout="@layout/fragment_bracket_details">
 
         <argument
-            android:name="bracketId"
-            app:argType="string" />
+            android:name="bracket"
+            app:argType="com.example.quickbracket.model.Bracket" />
 
     </fragment>
 

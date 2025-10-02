@@ -1,6 +1,7 @@
 package com.example.quickbracket.feature.bracket_details
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +24,7 @@ class BracketDetailsFragment : Fragment() {
 
     private val args: BracketDetailsFragmentArgs by navArgs()
 
+
     private var _binding: FragmentBracketDetailsBinding? = null
     private val binding get() = _binding!!
 
@@ -37,7 +39,10 @@ class BracketDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.tvTest.text = args.bracketId
+        val bracket = args.bracket
+
+        Log.d("BracketDetails","BracketName: ${bracket.name} \n BracketType: ${bracket.type} \n Sets: ${bracket.sets}")
+        binding.tvTest.text = bracket.name
 
     }
 

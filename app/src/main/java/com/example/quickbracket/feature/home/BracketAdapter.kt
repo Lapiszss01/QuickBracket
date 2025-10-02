@@ -27,7 +27,7 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
             itemView.setOnClickListener {
 
                 val action = HomeFragmentDirections.actionHomeFragmentToBracketDetailsFragment(
-                    bracketId = bracket.id
+                    bracket = bracket
                 )
                 // 2. Navega con la acción generada
                 itemView.findNavController().navigate(action)

@@ -12,11 +12,15 @@ import com.example.quickbracket.databinding.FragmentHomeBinding
 import com.example.quickbracket.feature.create_bracket.BracketViewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.quickbracket.R
+import com.example.quickbracket.model.Bracket
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
-class HomeFragment : Fragment() {
+
+
+
+class HomeFragment : Fragment(), BracketActionListener {
 
     private val bracketViewModel: BracketViewModel by activityViewModels()
 
@@ -49,7 +53,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        bracketAdapter = BracketAdapter()
+        bracketAdapter = BracketAdapter(this)
 
         binding.recyclerViewBrackets.apply {
             layoutManager = LinearLayoutManager(context)
@@ -78,5 +82,16 @@ class HomeFragment : Fragment() {
         super.onDestroyView()
         binding.recyclerViewBrackets.adapter = null
         _binding = null
+    }
+
+    override fun onEditBracket(bracket: Bracket) {
+        Log.d("Home","Edit bracket")
+        //TODO Edit logic
+    }
+
+    override fun onDeleteBracket(bracket: Bracket) {
+        Log.d("Home","Delete bracket")
+        //TODO Delete logic
+
     }
 }

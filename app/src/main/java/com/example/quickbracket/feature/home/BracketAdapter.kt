@@ -3,36 +3,69 @@ package com.example.quickbracket.feature.home
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.quickbracket.R
 import com.example.quickbracket.databinding.ItemBracketBinding
 import com.example.quickbracket.model.Bracket
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import androidx.navigation.findNavController
 
-class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(BracketDiffCallback()) {
+// Definición de la interfaz (fuera del Adapter)
+interface BracketActionListener {
+    fun onEditBracket(bracket: Bracket)
+    fun onDeleteBracket(bracket: Bracket)
+}
 
-    class BracketViewHolder(private val binding: ItemBracketBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+// El adaptador ahora recibe el listener en el constructor
+class BracketAdapter(private val listener: BracketActionListener) :
+    ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(BracketDiffCallback()) {
+
+    // El ViewHolder también recibe el listener
+    class BracketViewHolder(
+        private val binding: ItemBracketBinding,
+        private val listener: BracketActionListener
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(bracket: Bracket) {
 
             binding.textViewBracketName.text = bracket.name
 
-            // TODO: Configura el listener de clic aquí si lo necesitas
+            // 1. Listener para la navegación al detalle (al hacer clic en el item completo)
             itemView.setOnClickListener {
-
                 val action = HomeFragmentDirections.actionHomeFragmentToBracketDetailsFragment(
                     bracket = bracket
                 )
-                // 2. Navega con la acción generada
                 itemView.findNavController().navigate(action)
-                Log.d("Home","Nombre: ${bracket.name} Tipo:${bracket.type} Sets:${bracket.sets}")
+                Log.d("Home", "Nombre: ${bracket.name}")
             }
+
+            // 2. Lógica del botón de Configuración
+            binding.settingButton.setOnClickListener {
+                showPopupMenu(bracket)
+            }
+        }
+
+        private fun showPopupMenu(bracket: Bracket) {
+            // El menú se ancla al botón de configuración
+            val popup = PopupMenu(binding.settingButton.context, binding.settingButton)
+            popup.menuInflater.inflate(R.menu.bracket_options_menu, popup.menu)
+
+            popup.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.menu_edit -> {
+                        listener.onEditBracket(bracket) // Llama al método del Fragment
+                        true
+                    }
+                    R.id.menu_delete -> {
+                        listener.onDeleteBracket(bracket) // Llama al método del Fragment
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
         }
     }
 
@@ -42,7 +75,8 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
             parent,
             false
         )
-        return BracketViewHolder(binding)
+        // Pasa el listener al ViewHolder
+        return BracketViewHolder(binding, listener)
     }
 
     override fun onBindViewHolder(holder: BracketViewHolder, position: Int) {
@@ -53,12 +87,10 @@ class BracketAdapter : ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(Br
 
 class BracketDiffCallback : DiffUtil.ItemCallback<Bracket>() {
     override fun areItemsTheSame(oldItem: Bracket, newItem: Bracket): Boolean {
-        // Comprueba si son el mismo Bracket (usando el ID único)
         return oldItem.id == newItem.id
     }
 
     override fun areContentsTheSame(oldItem: Bracket, newItem: Bracket): Boolean {
-        // Comprueba si el contenido es idéntico
         return oldItem == newItem
     }
 }

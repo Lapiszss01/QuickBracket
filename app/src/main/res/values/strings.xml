@@ -53,4 +53,6 @@
     <string name="create_bracket_player_number">Player count</string>
     <string name="player_name_label">Player name</string>
     <string name="create_bracket_random_seeding">Random seeding</string>
+    <string name="general_edit">Edit</string>
+    <string name="general_delete">Delete</string>
 </resources>

@@ -7,17 +7,22 @@
     android:padding="16dp"
     tools:context=".feature.bracket_details.BracketDetailsFragment">
 
-    <LinearLayout
+    <HorizontalScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/tv_test"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        </TextView>
+        <LinearLayout
+            android:id="@+id/bracket_container"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:padding="16dp">
 
-    </LinearLayout>
+
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+
 
 </androidx.core.widget.NestedScrollView>

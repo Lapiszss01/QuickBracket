@@ -11,16 +11,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout
-            android:id="@+id/bracket_container"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:padding="16dp">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/bracket_container_recycler"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:padding="16dp"
+        android:orientation="horizontal"
+        tools:itemCount="5"
+        tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:listitem="@layout/item_round_layout" />
 
-
-
-        </LinearLayout>
     </HorizontalScrollView>
 
 

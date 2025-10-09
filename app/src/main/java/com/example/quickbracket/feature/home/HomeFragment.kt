@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.quickbracket.databinding.FragmentHomeBinding
-import com.example.quickbracket.feature.create_bracket.BracketViewModel
+import com.example.quickbracket.feature.create_bracket.CreateBracketViewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.quickbracket.R
 import com.example.quickbracket.model.Bracket
@@ -22,7 +22,7 @@ import com.example.quickbracket.model.Bracket
 
 class HomeFragment : Fragment(), BracketActionListener {
 
-    private val bracketViewModel: BracketViewModel by activityViewModels()
+    private val homeViewModel: HomeViewModel by activityViewModels()
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -63,11 +63,9 @@ class HomeFragment : Fragment(), BracketActionListener {
     }
 
     private fun observeBrackets() {
-
-        bracketViewModel.allBracketsLiveData.observe(viewLifecycleOwner) { bracketsList ->
+        homeViewModel.allBracketsLiveData.observe(viewLifecycleOwner) { bracketsList ->
 
             bracketAdapter.submitList(bracketsList)
-
             if (bracketsList.isEmpty()) {
                 binding.textViewEmptyList.visibility = View.VISIBLE
                 binding.recyclerViewBrackets.visibility = View.GONE
@@ -85,13 +83,12 @@ class HomeFragment : Fragment(), BracketActionListener {
     }
 
     override fun onEditBracket(bracket: Bracket) {
-        Log.d("Home","Edit bracket")
+        Log.d("Home","Edit bracket button")
         //TODO Edit logic
     }
 
     override fun onDeleteBracket(bracket: Bracket) {
-        Log.d("Home","Delete bracket")
-        //TODO Delete logic
-
+        Log.d("Home","Delete bracket button")
+        homeViewModel.deleteBracket(bracket)
     }
 }

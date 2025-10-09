@@ -26,7 +26,7 @@ import com.google.android.material.textfield.TextInputEditText
  */
 class CreateBracketFragment : Fragment() {
 
-    private val bracketViewModel: BracketViewModel by viewModels()
+    private val bracketViewModel: CreateBracketViewModel by viewModels()
 
     private var _binding: FragmentCreateBracketBinding? = null
     private val binding get() = _binding!!
@@ -74,7 +74,7 @@ class CreateBracketFragment : Fragment() {
             val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
             //Players
             val players = getRegisteredPlayerNames()
-            val bracketSets = generateSingleEliminationBracket(players.count())
+            val bracketSets = generateSingleEliminationBracket(players)
 
             val finalBracket = Bracket(name = bracketName, type = bracketType, sets = bracketSets)
             bracketViewModel.saveNewBracket(finalBracket)
@@ -143,73 +143,183 @@ class CreateBracketFragment : Fragment() {
         return players
     }
 
-    fun generateSingleEliminationBracket(playerCount: Int): List<MatchSet> {
+    fun generateSingleEliminationBracket(players: List<Player>): List<MatchSet> {
+        val playerCount = players.size
         if (playerCount <= 1) return emptyList()
 
-        // 1. Determinar el tamaño de la llave y los BYEs
+        // 1. Cálculo de Bracket Size y Byes
         var bracketSize = 1
         while (bracketSize < playerCount) {
             bracketSize *= 2
         }
         val byes = bracketSize - playerCount
 
-        val allSets = mutableListOf<MatchSet>()
-        var nextSetId = 1
+        val allSetsAsc = mutableListOf<MatchSet>()
+        var nextSetIdAsc = 1
 
-        // 2. Calcular los sets reales en la primera ronda
-        // La primera ronda solo tiene partidos para los jugadores que NO tienen un BYE.
-        // Ej: N=5, bracketSize=8, byes=3. Partidos reales: (5 - 3) / 2 = 1.
-        var setsInCurrentRound = (playerCount - byes) / 2
+        // 2. PREPARACIÓN DE PARTIDOS DE R1 (Incluye Byes Explícitos)
+        // Usamos el orden de siembra estándar para asignar los byes de forma simétrica.
+        val actualSeedingOrder = generateStandardSeedingOrder(playerCount, bracketSize)
 
-        // Si la fórmula da 0 o menos, significa que hay muchos BYEs y los partidos empezarán más tarde.
-        // Este caso se corrige en el bucle principal.
-        if (setsInCurrentRound < 1 && playerCount > 1) {
-            setsInCurrentRound = playerCount - (bracketSize / 2)
-            if (setsInCurrentRound <= 0) setsInCurrentRound = 1 // Caso N=3: 1 partido real.
+        // Lista que contendrá a P1, P2, P1, P2, ... en el orden de los sets de R1,
+        // incluyendo 'null' para los byes.
+        val r1Matches = mutableListOf<Player?>()
+
+        // Llenar r1Matches en el orden del bracket de R1
+        // Iteramos de dos en dos (slots P1 y P2)
+        for (i in 0 until bracketSize step 2) {
+            val p1Seed = actualSeedingOrder[i]
+            val p2Seed = actualSeedingOrder[i + 1]
+
+            // Asignación con chequeo de siembra > 0 para evitar el error del '0'
+            // Si la siembra es 0, o está fuera del rango (aunque la siembra estándar ya lo filtra), es un bye (null).
+            val p1 = if (p1Seed > 0 && p1Seed <= playerCount) players[p1Seed - 1] else null
+            val p2 = if (p2Seed > 0 && p2Seed <= playerCount) players[p2Seed - 1] else null
+
+            // CLAVE: Solo agregamos el set si al menos un jugador o un bye existe.
+            // En una siembra correcta, solo tendremos un set vacío si playerCount=0,
+            // pero esta condición asegura que los sets con bye (jugador vs null) se incluyan.
+            if (p1 != null || p2 != null) {
+                r1Matches.add(p1) // Puede ser Player o null (bye)
+                r1Matches.add(p2) // Puede ser Player o null (bye)
+            }
         }
 
-        var roundCounter = 1
+        var playerIndexR1 = 0 // Índice para recorrer r1Matches
 
-        // 3. Generar las rondas hasta que solo quede el set final
-        while (setsInCurrentRound >= 1) {
-            val roundName = when (setsInCurrentRound) {
-                1 -> "Final"
-                2 -> "Semifinales"
-                4 -> "Cuartos de Final"
-                else -> "Ronda $roundCounter"
-            }
+        // 3. GENERACIÓN DE SETS CON ASIGNACIÓN DE JUGADORES (Modificación de R1)
 
-            val currentRoundSets = mutableListOf<MatchSet>()
-            val setsStartId = nextSetId
-            val setsEndId = nextSetId + setsInCurrentRound - 1
+        // El número de sets de R1 ahora es el tamaño de r1Matches / 2, que incluye los sets con bye.
+        var setsInCurrentRoundAsc = r1Matches.size / 2
+        var roundCounterAsc = 1
 
-            for (i in 0 until setsInCurrentRound) {
-                val currentId = nextSetId++
+        // NOTA: Se elimina la variable `remainingByesAsc` ya que los byes se manejan con sets explícitos.
 
-                // Asignación de parentSetId (dónde va el ganador)
-                val parentId: Int? = if (setsInCurrentRound > 1) {
-                    // Los sets se agrupan en pares que alimentan al siguiente set.
-                    // El ganador va al set de la siguiente ronda.
-                    setsEndId + 1 + (i / 2)
-                } else {
-                    null // El ganador de la final no tiene set padre (es el campeón)
+        while (setsInCurrentRoundAsc >= 1) {
+            val currentRoundSetsAsc = mutableListOf<MatchSet>()
+            val setsEndIdAsc = nextSetIdAsc + setsInCurrentRoundAsc - 1
+
+            // Cálculo del número de sets de la siguiente ronda: mitad del número actual.
+            // Esta simplificación funciona porque los sets con bye son tratados como sets que avanzan.
+            val nextRoundSetsAsc = setsInCurrentRoundAsc / 2
+
+            val isFinalRound = (nextRoundSetsAsc == 0)
+            val roundNameAsc = if (isFinalRound) "Final" else "Ronda $roundCounterAsc"
+
+            for (i in 0 until setsInCurrentRoundAsc) {
+                val currentIdAsc = nextSetIdAsc++
+
+                var p1: Player? = null
+                var p2: Player? = null
+
+                if (roundCounterAsc == 1) {
+                    // ASIGNACIÓN CLAVE: Usamos la lista r1Matches, que contiene los jugadores y los 'null' (byes)
+                    if (playerIndexR1 < r1Matches.size) {
+                        p1 = r1Matches[playerIndexR1++]
+                    }
+                    if (playerIndexR1 < r1Matches.size) {
+                        p2 = r1Matches[playerIndexR1++]
+                    }
                 }
 
-                currentRoundSets.add(MatchSet(
-                    setId = currentId,
-                    roundName = roundName,
-                    parentSetId = parentId
+
+                val parentIdAsc: Int? = if (!isFinalRound) {
+                    setsEndIdAsc + 1 + (i / 2)
+                } else {
+                    null
+                }
+
+                currentRoundSetsAsc.add(MatchSet(
+                    setId = currentIdAsc,
+                    roundName = roundNameAsc,
+                    parentSetId = parentIdAsc,
+                    player1 = p1, // Ahora puede ser el jugador con bye (si el otro es null)
+                    player2 = p2  // Ahora puede ser null (el bye)
                 ))
             }
 
-            allSets.addAll(currentRoundSets)
+            allSetsAsc.addAll(currentRoundSetsAsc)
 
-            // La siguiente ronda siempre tendrá la mitad de partidos.
-            setsInCurrentRound /= 2
-            roundCounter++
+            // Transición
+            setsInCurrentRoundAsc = nextRoundSetsAsc
+
+            roundCounterAsc++
         }
 
-        return allSets.toList()
+        // 4. Renombrado Semántico (De atrás hacia adelante)
+
+        val totalSetsGenerated = allSetsAsc.size
+
+        var setsInRoundToRename = 1
+        var setsProcessed = 0
+        var setsRemaining = totalSetsGenerated
+
+        // Usamos roundCounterAsc que es el total de rondas generadas + 1
+        val totalRounds = roundCounterAsc - 1
+
+        while (setsRemaining > 0) {
+
+            val numSetsInThisRound = minOf(setsInRoundToRename, setsRemaining)
+
+            // Calculamos el índice de ronda real de forma descendente (totalRounds, totalRounds-1, ...)
+            val currentRoundIndex = totalRounds - (setsProcessed / setsInRoundToRename)
+
+            val newRoundName = when (setsInRoundToRename) {
+                1 -> "Final"
+                2 -> "Semifinales"
+                4 -> "Cuartos de Final"
+                else -> "Ronda $currentRoundIndex" // Usa el índice calculado
+            }
+
+            val startIndex = setsRemaining - numSetsInThisRound
+
+            for (i in startIndex until setsRemaining) {
+                val currentSet = allSetsAsc[i]
+                allSetsAsc[i] = currentSet.copy(roundName = newRoundName)
+            }
+
+            setsRemaining = startIndex
+            setsProcessed += numSetsInThisRound
+            setsInRoundToRename *= 2
+        }
+
+        return allSetsAsc.toList()
     }
+
+    // Mantenemos la función auxiliar sin cambios, ya que ahora la usamos correctamente:
+    fun generateStandardSeedingOrder(playerCount: Int, bracketSize: Int): List<Int> {
+        if (playerCount <= 0) return emptyList()
+
+        val bracket = IntArray(bracketSize) { 0 }
+        val players = (1..playerCount).toList()
+
+        var low = 0
+        var high = bracketSize - 1
+        var nextSeed = 1
+
+        // Llenar el bracket de forma simétrica (1 contra N, 2 contra N-1, etc.)
+        while (low <= high) {
+            if (nextSeed <= playerCount) {
+                bracket[low] = nextSeed
+            }
+            nextSeed++
+
+            if (low != high) {
+                if (nextSeed <= playerCount) {
+                    bracket[high] = nextSeed
+                }
+                nextSeed++
+            }
+
+            low++
+            high--
+        }
+
+        // La lista final contiene los números de siembra (1-based) en la posición del bracket.
+        return bracket.toList()
+    }
+
+
+
 
 }

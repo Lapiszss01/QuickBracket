@@ -10,7 +10,7 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
-class BracketViewModel(application: Application) : AndroidViewModel(application) {
+class CreateBracketViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = BracketRepository(application)
 

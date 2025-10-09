@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer
 
@@ -44,9 +45,9 @@ class BracketDataStoreManager(private val context: Context) {
 
     suspend fun saveBracketList(list: List<Bracket>) {
         val jsonString = json.encodeToString(ListSerializer(Bracket.serializer()), list)
-
         context.dataStore.edit { preferences ->
             preferences[BRACKETS_LIST_KEY] = jsonString
         }
     }
+
 }

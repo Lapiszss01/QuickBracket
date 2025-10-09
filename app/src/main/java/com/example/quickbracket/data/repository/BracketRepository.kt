@@ -20,4 +20,24 @@ class BracketRepository(context: Context) {
         }
         dataStoreManager.saveBracketList(updatedList)
     }
+
+    suspend fun deleteBracket(bracket: Bracket) {
+        val currentList = dataStoreManager.getBracketList.first()
+        val updatedList = currentList.filterNot { it.id == bracket.id }
+        dataStoreManager.saveBracketList(updatedList)
+    }
+
+    suspend fun editBracket(bracket: Bracket) {
+        val currentList = dataStoreManager.getBracketList.first()
+
+        val updatedList = currentList.map { existingBracket ->
+            if (existingBracket.id == bracket.id) {
+                bracket
+            } else {
+                existingBracket
+            }
+        }
+        dataStoreManager.saveBracketList(updatedList)
+    }
+
 }

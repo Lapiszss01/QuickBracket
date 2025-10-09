@@ -18,15 +18,29 @@
         <action
             android:id="@+id/action_HomeFragment_to_BracketDetailsFragment"
             app:destination="@id/BrackeDetailstFragment" />
+
+        <action
+            android:id="@+id/action_HomeFragment_to_EditBracketFragment"
+            app:destination="@id/EditBracketFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/CreateBracketFragment"
         android:name="com.example.quickbracket.feature.create_bracket.CreateBracketFragment"
         android:label="@string/create_bracket_fragment_label"
-        tools:layout="@layout/fragment_home">
+        tools:layout="@layout/fragment_create_bracket">
         <action
             android:id="@+id/action_CreateBracketFragment_to_HomeFragment"
+            app:destination="@id/HomeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/EditBracketFragment"
+        android:name="com.example.quickbracket.feature.edit_bracket.EditBracketFragment"
+        android:label="@string/edit_bracket_fragment_label"
+        tools:layout="@layout/fragment_edit_bracket">
+        <action
+            android:id="@+id/action_EditBracketFragment_to_HomeFragment"
             app:destination="@id/HomeFragment" />
     </fragment>
 

@@ -54,10 +54,10 @@ class BracketAdapter(private val listener: BracketActionListener) :
 
             popup.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
-                    R.id.menu_edit -> {
+                    /*R.id.menu_edit -> {
                         listener.onEditBracket(bracket) // Llama al método del Fragment
                         true
-                    }
+                    }*/
                     R.id.menu_delete -> {
                         listener.onDeleteBracket(bracket) // Llama al método del Fragment
                         true

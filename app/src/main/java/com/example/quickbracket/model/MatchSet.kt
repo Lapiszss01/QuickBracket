@@ -12,6 +12,6 @@ data class MatchSet(
     var roundName: String,
     val path: BracketPath = BracketPath.WINNERS,
     val parentSetId: Int?,
-    val player1: Player? = null,
-    val player2: Player? = null
+    var player1: Player? = null,
+    var player2: Player? = null
 ) : Parcelable

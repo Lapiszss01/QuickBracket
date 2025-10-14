@@ -233,8 +233,8 @@ class CreateBracketFragment : Fragment() {
                     setId = currentIdAsc,
                     roundName = roundNameAsc,
                     parentSetId = parentIdAsc,
-                    player1 = p1, // Ahora puede ser el jugador con bye (si el otro es null)
-                    player2 = p2  // Ahora puede ser null (el bye)
+                    player1 = p1,
+                    player2 = p2
                 ))
             }
 
@@ -266,9 +266,9 @@ class CreateBracketFragment : Fragment() {
 
             val newRoundName = when (setsInRoundToRename) {
                 1 -> "Final"
-                2 -> "Semifinales"
-                4 -> "Cuartos de Final"
-                else -> "Ronda $currentRoundIndex" // Usa el índice calculado
+                2 -> "Semifinal"
+                4 -> "Quarters"
+                else -> "Ronda $currentRoundIndex"
             }
 
             val startIndex = setsRemaining - numSetsInThisRound

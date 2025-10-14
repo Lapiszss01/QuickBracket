@@ -1,6 +1,7 @@
 package com.example.quickbracket.feature.bracket_details
 
 import android.app.AlertDialog
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
@@ -51,6 +53,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             Log.d("BracketDetails", "$set")
         }
         setupBracketRecyclerView(bracket.sets)
+
     }
 
     private fun setupBracketRecyclerView(sets: List<MatchSet>) {
@@ -72,6 +75,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
 
         val player1Name = matchSet.player1?.name ?: "Jugador 1"
         val player2Name = matchSet.player2?.name ?: "Jugador 2"
+        var winnerName = ""
 
         AlertDialog.Builder(requireContext())
             .setTitle("Registrar Ganador del Set")
@@ -85,6 +89,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             }
             .setNeutralButton("Cancelar", null)
             .show()
+
     }
 
     fun playerWinsRound(matchSet: MatchSet, winnerPlayer: Player){
@@ -95,8 +100,11 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
         Log.d("SetResult", "Set: \n $matchSet")
         Log.d("SetResult", "Bracket: \n ${bracketSets}")
 
-        val currentSet = bracketSets.find { it.setId == matchSet.setId }
-        //currentSet?.winnerId = winnerPlayer.id
+        if (matchSet.roundName == "Final") {
+            winnerToast(requireContext(), winnerPlayer.name)
+            Log.d("SetResult", "¡Ganador de la Bracket: ${winnerPlayer.name}!")
+            return
+        }
 
         val parentSetId = matchSet.parentSetId
         if (parentSetId == null) {
@@ -114,14 +122,14 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             parentSet.player1 == null -> {
                 parentSet.player1 = winnerPlayer.copy()
             }
-            // Asignar al player2 si está libre
             parentSet.player2 == null -> {
                 parentSet.player2 = winnerPlayer.copy()
             }
             else -> {
-                Log.w("SetResult", "Error.")
+                Log.w("SetResult", "Error: Ambos jugadores ya están asignados en el set padre ${parentSetId}.")
             }
         }
+
 
         val roundAdapter = binding.bracketContainerRecycler.adapter as? RoundAdapter
         roundAdapter?.notifyDataSetChanged()
@@ -130,4 +138,11 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
         bracketDetailsViewModel.updateBracketSets(bracket)
 
     }
+
+    fun winnerToast(context: Context, nombreJugador: String) {
+
+        val mensaje = "¡Felicidades! ${nombreJugador} ha ganado la bracket."
+        Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
+    }
+
 }

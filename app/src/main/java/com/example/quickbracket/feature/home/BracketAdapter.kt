@@ -12,54 +12,49 @@ import com.example.quickbracket.databinding.ItemBracketBinding
 import com.example.quickbracket.model.Bracket
 import androidx.navigation.findNavController
 
-// Definición de la interfaz (fuera del Adapter)
 interface BracketActionListener {
     fun onEditBracket(bracket: Bracket)
     fun onDeleteBracket(bracket: Bracket)
 }
 
-// El adaptador ahora recibe el listener en el constructor
 class BracketAdapter(private val listener: BracketActionListener) :
     ListAdapter<Bracket, BracketAdapter.BracketViewHolder>(BracketDiffCallback()) {
 
-    // El ViewHolder también recibe el listener
     class BracketViewHolder(
         private val binding: ItemBracketBinding,
         private val listener: BracketActionListener
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(bracket: Bracket) {
-
             binding.textViewBracketName.text = bracket.name
 
-            // 1. Listener para la navegación al detalle (al hacer clic en el item completo)
+            //Listener click on bracket item
             itemView.setOnClickListener {
                 val action = HomeFragmentDirections.actionHomeFragmentToBracketDetailsFragment(
                     bracket = bracket
                 )
                 itemView.findNavController().navigate(action)
-                Log.d("Home", "Nombre: ${bracket.name}")
             }
 
-            // 2. Lógica del botón de Configuración
+            //Listener click on bracket's settings
             binding.settingButton.setOnClickListener {
                 showPopupMenu(bracket)
             }
         }
 
         private fun showPopupMenu(bracket: Bracket) {
-            // El menú se ancla al botón de configuración
             val popup = PopupMenu(binding.settingButton.context, binding.settingButton)
             popup.menuInflater.inflate(R.menu.bracket_options_menu, popup.menu)
 
             popup.setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
+                    //TODO: Edit functions on brackets
                     /*R.id.menu_edit -> {
-                        listener.onEditBracket(bracket) // Llama al método del Fragment
+                        listener.onEditBracket(bracket)
                         true
                     }*/
                     R.id.menu_delete -> {
-                        listener.onDeleteBracket(bracket) // Llama al método del Fragment
+                        listener.onDeleteBracket(bracket)
                         true
                     }
                     else -> false
@@ -67,6 +62,7 @@ class BracketAdapter(private val listener: BracketActionListener) :
             }
             popup.show()
         }
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BracketViewHolder {
@@ -75,7 +71,6 @@ class BracketAdapter(private val listener: BracketActionListener) :
             parent,
             false
         )
-        // Pasa el listener al ViewHolder
         return BracketViewHolder(binding, listener)
     }
 
@@ -83,6 +78,7 @@ class BracketAdapter(private val listener: BracketActionListener) :
         val bracket = getItem(position)
         holder.bind(bracket)
     }
+
 }
 
 class BracketDiffCallback : DiffUtil.ItemCallback<Bracket>() {

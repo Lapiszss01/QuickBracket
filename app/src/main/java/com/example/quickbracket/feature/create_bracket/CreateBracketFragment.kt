@@ -10,12 +10,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
-import android.util.Log
 import com.example.quickbracket.R
 import com.example.quickbracket.databinding.FragmentCreateBracketBinding
 import androidx.navigation.fragment.findNavController
 import com.example.quickbracket.model.Bracket
-import com.example.quickbracket.model.BracketPath
 import com.example.quickbracket.model.MatchSet
 import com.example.quickbracket.model.Player
 import com.google.android.material.textfield.TextInputEditText
@@ -35,6 +33,7 @@ class CreateBracketFragment : Fragment() {
 
     enum class BracketType {
         SingleElimination,
+        //TODO: Next bracket types
         //DoubleElimination,
         //RoundRobin
     }
@@ -50,7 +49,6 @@ class CreateBracketFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        //Assing bracket types
         val bracketTypes = BracketType.entries.map { it.name }
         val adapter = ArrayAdapter(
             requireContext(),
@@ -59,7 +57,6 @@ class CreateBracketFragment : Fragment() {
         )
         binding.bracketTypeAutoCompleteTextView.setAdapter(adapter)
 
-        //Assign player count and edit text
         val playerCountEditText = binding.etPlayerCount as? TextInputEditText
         playerCountEditText?.doAfterTextChanged { editable ->
             val playerCountText = editable?.toString()
@@ -69,33 +66,28 @@ class CreateBracketFragment : Fragment() {
 
         //Create button
         binding.createBracketButton.setOnClickListener {
-            //Data
             val bracketName = binding.bracketNameEditText.text.toString()
             val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
-            //Players
             val players = getRegisteredPlayerNames()
             val bracketSets = generateSingleEliminationBracket(players)
 
-            val finalBracket = Bracket(name = bracketName, type = bracketType, sets = bracketSets)
-            bracketViewModel.saveNewBracket(finalBracket)
-
-            Log.d("BrackedCreation", "Rondas: ${bracketSets.count()}")
-            for (b in bracketSets){
-                Log.d("BrackedCreation", "Ronda: ${b}")
-            }
-
+            val finalBracket = Bracket(name = bracketName, type = bracketType, sets = bracketSets, entrants = players)
+            bracketViewModel.saveNewBracket(finalBracket, binding.etPlayerCount.text.toString())
         }
 
-        // Observes messages
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
         bracketViewModel.statusMessage.observe(viewLifecycleOwner) { message ->
             if (message.isNotEmpty()) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-                binding.bracketNameEditText.text?.clear()
             }
         }
 
-        bracketViewModel.bracketCreated.observe(viewLifecycleOwner){ created ->
-            if(created){
+        bracketViewModel.bracketCreated.observe(viewLifecycleOwner) { created ->
+            if (created) {
+                binding.bracketNameEditText.text?.clear()
                 findNavController().navigate(R.id.action_CreateBracketFragment_to_HomeFragment)
             }
         }

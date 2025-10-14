@@ -11,7 +11,8 @@ data class Bracket(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val type: String,
-    var sets: List<MatchSet> = emptyList()
+    var sets: List<MatchSet> = emptyList(),
+    var entrants: List<Player> = emptyList()
 ) : Parcelable
 
 enum class BracketPath {

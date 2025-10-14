@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.quickbracket.databinding.FragmentHomeBinding
@@ -33,10 +34,8 @@ class HomeFragment : Fragment(), BracketActionListener {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -44,9 +43,9 @@ class HomeFragment : Fragment(), BracketActionListener {
 
         setupRecyclerView()
         observeBrackets()
+        observeStatusMessage()
 
         binding.fab.setOnClickListener { view ->
-            Log.d("Home","fab button")
             findNavController().navigate(R.id.action_HomeFragment_to_CreateBracketFragment)
         }
 
@@ -64,7 +63,6 @@ class HomeFragment : Fragment(), BracketActionListener {
 
     private fun observeBrackets() {
         homeViewModel.allBracketsLiveData.observe(viewLifecycleOwner) { bracketsList ->
-
             bracketAdapter.submitList(bracketsList)
             if (bracketsList.isEmpty()) {
                 binding.textViewEmptyList.visibility = View.VISIBLE
@@ -76,6 +74,14 @@ class HomeFragment : Fragment(), BracketActionListener {
         }
     }
 
+    private fun observeStatusMessage() {
+        homeViewModel.statusMessage.observe(viewLifecycleOwner) { message ->
+            if (!message.isNullOrEmpty()) {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         binding.recyclerViewBrackets.adapter = null
@@ -83,12 +89,10 @@ class HomeFragment : Fragment(), BracketActionListener {
     }
 
     override fun onEditBracket(bracket: Bracket) {
-        Log.d("Home","Edit bracket button")
         //TODO Edit logic
     }
 
     override fun onDeleteBracket(bracket: Bracket) {
-        Log.d("Home","Delete bracket button")
         homeViewModel.deleteBracket(bracket)
     }
 }

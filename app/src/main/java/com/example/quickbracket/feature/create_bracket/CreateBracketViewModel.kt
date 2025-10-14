@@ -1,6 +1,7 @@
 package com.example.quickbracket.feature.create_bracket
 
 import android.app.Application
+import android.text.Editable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -22,8 +23,8 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
     private val _bracketCreated = MutableLiveData<Boolean>()
     val bracketCreated: LiveData<Boolean> = _bracketCreated
 
-    fun saveNewBracket(bracket: Bracket) {
-        if (bracket.name.isBlank() || bracket.type.isBlank()) {
+    fun saveNewBracket(bracket: Bracket, playerCount: String) {
+        if (bracket.name.isBlank() || bracket.type.isBlank() || playerCount.toInt() != bracket.entrants.size) {
             _statusMessage.value = "Must not leave any field blank."
             return
         }

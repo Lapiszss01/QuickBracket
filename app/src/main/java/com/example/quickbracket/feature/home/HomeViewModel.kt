@@ -23,10 +23,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 repository.deleteBracket(bracket)
-                _statusMessage.postValue("Deleted ${bracket.name}")
+                _statusMessage.postValue("${bracket.name} deleted")
             } catch (e: Exception) {
                 _statusMessage.postValue("Error deleting")
-
             }
         }
     }

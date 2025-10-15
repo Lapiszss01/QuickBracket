@@ -11,5 +11,6 @@ import java.util.UUID
 data class Player(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
-    val isEliminated: Boolean = false
+    val isEliminated: Boolean = false,
+    val seed: Int = 0
 ) : Parcelable

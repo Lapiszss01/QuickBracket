@@ -80,8 +80,17 @@ class RoundAdapter(
             roundSets.forEachIndexed { index, matchSet ->
                 val setBinding = ItemSetBinding.inflate(inflater, binding.setsVerticalContainer, false)
 
-                setBinding.player1Name.text = "Set ${matchSet.player1?.name} P1"
-                setBinding.player2Name.text = "Set ${matchSet.player2?.name} P2"
+
+                setBinding.player1Name.text = if (matchSet.player1?.name.isNullOrBlank()) {
+                    "TBD"
+                } else {
+                    "${matchSet.player1?.seed ?: ""} - ${matchSet.player1?.name} P1"
+                }
+                setBinding.player2Name.text = if (matchSet.player2?.name.isNullOrBlank()) {
+                    "TBD"
+                } else {
+                    "${matchSet.player2?.seed ?: ""} - ${matchSet.player2?.name} P2"
+                }
 
                 setBinding.root.setOnClickListener {
                     listener.onMatchSetClicked(matchSet)

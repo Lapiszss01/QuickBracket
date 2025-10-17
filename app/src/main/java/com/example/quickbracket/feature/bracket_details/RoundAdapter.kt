@@ -43,7 +43,6 @@ class RoundAdapter(
         val roundSets = setsByRound[roundName] ?: emptyList()
 
         // Obtenemos la cantidad de sets en la ronda anterior (la que alimenta a esta)
-        // Usamos esta información para calcular el espaciado y centrado.
         val setsInPreviousRound = if (position > 0) {
             setsByRound[roundNames[position - 1]]?.size ?: 0
         } else {
@@ -53,7 +52,7 @@ class RoundAdapter(
         holder.bind(
             roundName,
             roundSets,
-            setsInPreviousRound, // Usamos setsInPreviousRound para el cálculo de centrado
+            setsInPreviousRound,
             inflater,
             resources,
             roundNames.size - 1
@@ -74,6 +73,7 @@ class RoundAdapter(
             lastRoundIndex: Int
         ) {
             binding.roundTitle.text = roundName
+            // Aseguramos que el contenedor esté vacío antes de añadir las vistas.
             binding.setsVerticalContainer.removeAllViews()
 
             val baseSpacing = resources.getDimensionPixelSize(R.dimen.set_base_spacing)
@@ -88,7 +88,31 @@ class RoundAdapter(
 
             val verticalSpace = baseSpacing * roundFactor
 
-            val initialOffset = if (layoutPosition > 0) verticalSpace / 2 else 0
+            val isFirstRound = layoutPosition == 0
+            val isLastRound = layoutPosition == lastRoundIndex // <-- Nuevo: Comprueba si es la Final
+
+            // *** CAMBIO CLAVE 1: Anular el offset inicial para la Final ***
+            // El offset solo se aplica si NO es la última ronda, y si no es la primera.
+            val initialOffset = if (!isLastRound && layoutPosition > 0) verticalSpace / 2 else 0
+
+            // LÓGICA CLAVE: FILTRAR BYES DE LA PRIMERA RONDA
+            val visibleSets = roundSets.filterNot { matchSet ->
+                if (isFirstRound) {
+                    // Condición de Bye: Un jugador está presente (no nulo) y el otro está ausente (nulo)
+                    val isBye = (matchSet.player1 != null && matchSet.player2 == null) ||
+                            (matchSet.player1 == null && matchSet.player2 != null)
+
+                    if (isBye) {
+                        Log.d("RoundAdapter", "Skipping first-round bye for set: ${matchSet.setId}")
+                    }
+                    isBye
+                } else {
+                    false
+                }
+            }
+
+            // Usamos una lista temporal para gestionar las vistas y espaciadores a añadir
+            val viewsToAdd = mutableListOf<View>()
 
             if (initialOffset > 0) {
                 val initialSpacer = View(itemView.context).apply {
@@ -97,15 +121,16 @@ class RoundAdapter(
                         initialOffset
                     )
                 }
-                binding.setsVerticalContainer.addView(initialSpacer)
+                viewsToAdd.add(initialSpacer)
             }
 
-            roundSets.forEachIndexed { index, matchSet ->
+            visibleSets.forEachIndexed { index, matchSet ->
                 val setBinding = ItemSetBinding.inflate(inflater, binding.setsVerticalContainer, false)
 
                 val isFinished = matchSet.isFinished == true
                 val winner = if (isFinished) matchSet.winner else null
 
+                // Player 1 setup
                 val player1NameText = if (matchSet.player1?.name.isNullOrBlank()) {
                     "TBD"
                 } else {
@@ -119,6 +144,7 @@ class RoundAdapter(
                     setBinding.player1Name.setTypeface(null, Typeface.NORMAL)
                 }
 
+                // Player 2 setup
                 val player2NameText = if (matchSet.player2?.name.isNullOrBlank()) {
                     "TBD"
                 } else {
@@ -137,33 +163,45 @@ class RoundAdapter(
                     listener.onMatchSetClicked(matchSet)
                 }
 
-                binding.setsVerticalContainer.addView(setBinding.root)
+                viewsToAdd.add(setBinding.root) // Añadimos el set card
 
-                val isLastSet = index == roundSets.lastIndex
-                val isFinalRound = layoutPosition == lastRoundIndex
+                val isLastVisibleSet = index == visibleSets.lastIndex
 
-                if (!isLastSet) {
+                // Solo añadimos espaciador entre sets si NO es el último set visible
+                if (!isLastVisibleSet) {
                     val spacer = View(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             verticalSpace
                         )
                     }
-                    binding.setsVerticalContainer.addView(spacer)
+                    viewsToAdd.add(spacer)
                 }
             }
 
-            if (initialOffset > 0) {
+            // *** CAMBIO CLAVE 2: Anular el offset final para la Final ***
+            if (initialOffset > 0) { // Si hay offset inicial, también debe haber uno final (si no es la Final)
                 val finalSpacer = View(itemView.context).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         initialOffset
                     )
                 }
-                binding.setsVerticalContainer.addView(finalSpacer)
+                viewsToAdd.add(finalSpacer)
             }
 
+            // Añadimos todas las vistas recolectadas al contenedor
+            viewsToAdd.forEach {
+                binding.setsVerticalContainer.addView(it)
+            }
+
+            // Asegura que el contenedor se centre verticalmente dentro de su celda
             binding.root.gravity = android.view.Gravity.CENTER
+
+            // Si es la Final, y solo hay 1 set, le damos al LinearLayout una gravedad de CENTRO también
+            if (isLastRound && visibleSets.size == 1) {
+                binding.setsVerticalContainer.gravity = android.view.Gravity.CENTER_VERTICAL
+            }
         }
     }
 }

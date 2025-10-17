@@ -1,6 +1,6 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
-    <dimen name="round_spacing">40dp</dimen>
+    <dimen name="round_spacing">20dp</dimen>
     <dimen name="round_title_padding">8dp</dimen>
     <dimen name="set_base_spacing">30dp</dimen>
 </resources>

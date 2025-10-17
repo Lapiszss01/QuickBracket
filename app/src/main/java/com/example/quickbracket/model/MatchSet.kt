@@ -10,8 +10,10 @@ import kotlinx.serialization.Serializable
 data class MatchSet(
     val setId: Int,
     var roundName: String,
-    val path: BracketPath = BracketPath.WINNERS,
+    //val path: BracketPath = BracketPath.WINNERS,
     val parentSetId: Int?,
     var player1: Player? = null,
-    var player2: Player? = null
+    var player2: Player? = null,
+    var isFinished: Boolean? = false,
+    var winner: Player? = null
 ) : Parcelable

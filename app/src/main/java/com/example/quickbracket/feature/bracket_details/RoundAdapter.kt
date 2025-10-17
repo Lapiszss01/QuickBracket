@@ -1,6 +1,7 @@
 package com.example.quickbracket.feature.bracket_details
 
 import android.content.res.Resources
+import android.graphics.Typeface
 import com.example.quickbracket.databinding.ItemRoundLayoutBinding
 import com.example.quickbracket.model.MatchSet
 import android.util.Log
@@ -8,14 +9,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.PopupMenu
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.quickbracket.R
-import com.example.quickbracket.databinding.ItemBracketBinding
-import com.example.quickbracket.model.Bracket
-import androidx.navigation.findNavController
 import com.example.quickbracket.databinding.ItemSetBinding
 
 interface OnMatchSetClickListener {
@@ -47,14 +42,22 @@ class RoundAdapter(
         val roundName = roundNames[position]
         val roundSets = setsByRound[roundName] ?: emptyList()
 
-        // Obtenemos la cantidad de sets en la siguiente ronda para el cálculo de espaciado
-        val setsInNextRound = if (position < roundNames.size - 1) {
-            setsByRound[roundNames[position + 1]]?.size ?: 0
+        // Obtenemos la cantidad de sets en la ronda anterior (la que alimenta a esta)
+        // Usamos esta información para calcular el espaciado y centrado.
+        val setsInPreviousRound = if (position > 0) {
+            setsByRound[roundNames[position - 1]]?.size ?: 0
         } else {
-            0
+            0 // Primera ronda, no hay sets anteriores
         }
 
-        holder.bind(roundName, roundSets, setsInNextRound, inflater, resources, roundNames.size - 1)
+        holder.bind(
+            roundName,
+            roundSets,
+            setsInPreviousRound, // Usamos setsInPreviousRound para el cálculo de centrado
+            inflater,
+            resources,
+            roundNames.size - 1
+        )
     }
 
     override fun getItemCount(): Int = roundNames.size
@@ -65,48 +68,81 @@ class RoundAdapter(
         fun bind(
             roundName: String,
             roundSets: List<MatchSet>,
-            setsInNextRound: Int,
+            setsInPreviousRound: Int,
             inflater: LayoutInflater,
             resources: Resources,
-
             lastRoundIndex: Int
         ) {
             binding.roundTitle.text = roundName
-
-            // Limpia el contenedor para evitar vistas duplicadas al reciclarse
             binding.setsVerticalContainer.removeAllViews()
 
-            // Re-implementa la lógica de creación de sets y espaciadores
+            val baseSpacing = resources.getDimensionPixelSize(R.dimen.set_base_spacing)
+
+            val setsInCurrentRound = roundSets.size
+
+            val roundFactor = if (setsInCurrentRound > 0 && setsInPreviousRound > 0) {
+                setsInPreviousRound / setsInCurrentRound
+            } else {
+                1
+            }
+
+            val verticalSpace = baseSpacing * roundFactor
+
+            val initialOffset = if (layoutPosition > 0) verticalSpace / 2 else 0
+
+            if (initialOffset > 0) {
+                val initialSpacer = View(itemView.context).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        initialOffset
+                    )
+                }
+                binding.setsVerticalContainer.addView(initialSpacer)
+            }
+
             roundSets.forEachIndexed { index, matchSet ->
                 val setBinding = ItemSetBinding.inflate(inflater, binding.setsVerticalContainer, false)
 
+                val isFinished = matchSet.isFinished == true
+                val winner = if (isFinished) matchSet.winner else null
 
-                setBinding.player1Name.text = if (matchSet.player1?.name.isNullOrBlank()) {
+                val player1NameText = if (matchSet.player1?.name.isNullOrBlank()) {
                     "TBD"
                 } else {
-                    "${matchSet.player1?.seed ?: ""} - ${matchSet.player1?.name} P1"
+                    "${matchSet.player1?.seed ?: ""} - ${matchSet.player1?.name}"
                 }
-                setBinding.player2Name.text = if (matchSet.player2?.name.isNullOrBlank()) {
+                setBinding.player1Name.text = player1NameText
+
+                if (isFinished && winner?.id == matchSet.player1?.id) {
+                    setBinding.player1Name.setTypeface(null, Typeface.BOLD)
+                } else {
+                    setBinding.player1Name.setTypeface(null, Typeface.NORMAL)
+                }
+
+                val player2NameText = if (matchSet.player2?.name.isNullOrBlank()) {
                     "TBD"
                 } else {
-                    "${matchSet.player2?.seed ?: ""} - ${matchSet.player2?.name} P2"
+                    "${matchSet.player2?.seed ?: ""} - ${matchSet.player2?.name}"
+                }
+                setBinding.player2Name.text = player2NameText
+
+                if (isFinished && winner?.id == matchSet.player2?.id) {
+                    setBinding.player2Name.setTypeface(null, Typeface.BOLD)
+                } else {
+                    setBinding.player2Name.setTypeface(null, Typeface.NORMAL)
                 }
 
                 setBinding.root.setOnClickListener {
+                    Log.d("SetCLick",matchSet.toString())
                     listener.onMatchSetClicked(matchSet)
                 }
 
                 binding.setsVerticalContainer.addView(setBinding.root)
 
-                // Lógica de espaciado (similar a la que tenías)
-                val baseSpacing = resources.getDimensionPixelSize(R.dimen.set_base_spacing)
-                val roundFactor = if (setsInNextRound > 0) roundSets.size / setsInNextRound else 1
-                val verticalSpace = baseSpacing * roundFactor
-
                 val isLastSet = index == roundSets.lastIndex
                 val isFinalRound = layoutPosition == lastRoundIndex
 
-                if (!isLastSet || !isFinalRound) { // Mantenemos el espaciador si no es el último set de la ronda final
+                if (!isLastSet) {
                     val spacer = View(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -116,9 +152,18 @@ class RoundAdapter(
                     binding.setsVerticalContainer.addView(spacer)
                 }
             }
+
+            if (initialOffset > 0) {
+                val finalSpacer = View(itemView.context).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        initialOffset
+                    )
+                }
+                binding.setsVerticalContainer.addView(finalSpacer)
+            }
+
             binding.root.gravity = android.view.Gravity.CENTER
-
-
         }
     }
 }

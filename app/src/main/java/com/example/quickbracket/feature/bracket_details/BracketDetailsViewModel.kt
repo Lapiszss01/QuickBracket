@@ -33,14 +33,4 @@ class BracketDetailsViewModel(application: Application) : AndroidViewModel(appli
             }
         }
     }
-
-    fun startFinalSequence(){
-        viewModelScope.launch {
-            try {
-                _finalSequence.postValue("Start final sequence")
-            } catch (e: Exception) {
-                _finalSequence.postValue("Error final sequence")
-            }
-        }
-    }
 }

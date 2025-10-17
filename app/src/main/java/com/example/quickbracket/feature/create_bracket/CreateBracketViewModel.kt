@@ -1,7 +1,6 @@
 package com.example.quickbracket.feature.create_bracket
 
 import android.app.Application
-import android.text.Editable
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -10,13 +9,10 @@ import com.example.quickbracket.data.repository.BracketRepository
 import com.example.quickbracket.model.Bracket
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.quickbracket.R
 import com.example.quickbracket.model.MatchSet
 import com.example.quickbracket.model.Player
-import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class CreateBracketViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -47,33 +43,25 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
             } catch (e: Exception) {
                 _statusMessage.postValue("Error saving: ${e.message}")
                 _bracketCreated.postValue(false)
-
             }
         }
     }
 
     fun createBracket(players: List<Player>) {
-        viewModelScope.launch(Dispatchers.Default) { // Usamos Dispatchers.Default para trabajo intensivo de CPU
+        viewModelScope.launch(Dispatchers.Default) {
             try {
-                // Ejecutar la lógica pesada fuera del hilo principal
-                val bracketSets = generateSingleEliminationBracket(players)
-
-                // Asignar el resultado al LiveData. Esto lo hace internamente en el hilo principal.
-                _generatedBracketSets.postValue(bracketSets)
-
+                val initialBracketSets = generateSingleEliminationBracket(players)
+                val finalBracketSets = processByes(initialBracketSets)
+                _generatedBracketSets.postValue(finalBracketSets)
             } catch (e: IllegalArgumentException) {
-                // Manejar el límite de jugadores o cualquier error de lógica
                 Log.e("Bracket", "Error de límite o lógica: ${e.message}")
                 _statusMessage.postValue("Error en la creación del bracket: ${e.message}")
             } catch (e: OutOfMemoryError) {
-                // Manejo de OutOfMemory
                 Log.e("Bracket", "Se agotó la memoria: ${e.message}")
                 _statusMessage.postValue("Error de memoria. Demasiados jugadores.")
             }
         }
     }
-
-
 
     fun generateSingleEliminationBracket(players: List<Player>): List<MatchSet> {
 
@@ -90,39 +78,68 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
             bracketSize *= 2
         }
 
-        val allSetsAsc = mutableListOf<MatchSet>()
+        val numByes = bracketSize - playerCount
         val sortedPlayers = players.sortedBy { it.seed }
+        val playersWithBye = sortedPlayers.take(numByes)
+        val playersInR1 = sortedPlayers.drop(numByes)
 
         val r1Order = MutableList<Player?>(bracketSize) { null }
+
+        // 1. Insertar a los jugadores con BYE en su posición y el slot de su oponente como null
+        for (i in 0 until numByes) {
+            val playerWithBye = playersWithBye[i]
+            val pairIndex = getByePosition(i, bracketSize)
+
+            // Colocamos el jugador en el slot par y su oponente nulo en el impar
+            r1Order[pairIndex] = playerWithBye
+            r1Order[pairIndex + 1] = null
+        }
+
+        // 2. Generar la secuencia de emparejamientos para R1 (Seed 4 vs Seed 5, etc.)
+        val r1MatchupOrder = mutableListOf<Player?>()
         var low = 0
-        var high = bracketSize - 1
-        var playerIndex = 0
+        var high = playersInR1.size - 1
 
-        while (low <= high && playerIndex < sortedPlayers.size) {
-            r1Order[low] = sortedPlayers[playerIndex++]
-
-            if (low != high && playerIndex < sortedPlayers.size) {
-                r1Order[high] = sortedPlayers[playerIndex++]
+        while (low <= high) {
+            if (low < high) {
+                r1MatchupOrder.add(playersInR1[low])
+                r1MatchupOrder.add(playersInR1[high])
+            } else if (low == high) {
+                r1MatchupOrder.add(playersInR1[low])
             }
-
             low++
             high--
         }
 
+        // 3. Asignar directamente los jugadores de R1 a los slots restantes (pares de nulls)
+        var r1MatchupIndex = 0
+        for (i in 0 until bracketSize step 2) {
+            // Buscamos un par de slots que sean AMBOS nulos (indicando un partido de R1 sin BYE)
+            if (r1Order[i] == null && r1Order[i + 1] == null) {
+
+                if (r1MatchupIndex < r1MatchupOrder.size) {
+                    r1Order[i] = r1MatchupOrder[r1MatchupIndex++]
+                }
+                if (r1MatchupIndex < r1MatchupOrder.size) {
+                    r1Order[i + 1] = r1MatchupOrder[r1MatchupIndex++]
+                }
+            }
+        }
+
+        val allSetsAsc = mutableListOf<MatchSet>()
         val r1Matches = mutableListOf<Player?>()
+
         for (i in 0 until bracketSize step 2) {
             val p1 = r1Order[i]
             val p2 = r1Order[i + 1]
 
-            if (p1 != null || p2 != null) {
-                r1Matches.add(p1)
-                r1Matches.add(p2)
-            }
+            r1Matches.add(p1)
+            r1Matches.add(p2)
         }
 
         var nextSetIdAsc = 1
         var playerIndexR1 = 0
-        var setsInCurrentRoundAsc = r1Matches.size / 2
+        var setsInCurrentRoundAsc = bracketSize / 2
         var roundCounterAsc = 1
 
         while (setsInCurrentRoundAsc >= 1) {
@@ -166,7 +183,6 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
         }
 
         val totalSetsGenerated = allSetsAsc.size
-
         var setsInRoundToRename = 1
         var setsProcessed = 0
         var setsRemaining = totalSetsGenerated
@@ -179,7 +195,7 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
             val newRoundName = when (setsInRoundToRename) {
                 1 -> "Final"
                 2 -> "Semifinal"
-                4 -> "Quarters"
+                4 -> "Cuartos de Final"
                 else -> "Ronda $currentRoundIndex"
             }
 
@@ -198,5 +214,79 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
         return allSetsAsc.toList()
     }
 
+    private fun getByePosition(byeIndex: Int, bracketSize: Int): Int {
+        if (byeIndex < 0 || bracketSize < 2) return -1
 
+        val numSlots = bracketSize / 2
+        val slots = (0 until numSlots).toList()
+
+        val byeSlots = mutableListOf<Int>()
+        byeSlots.add(slots.first())
+        if (numSlots > 1) {
+            byeSlots.add(slots.last())
+        }
+
+        var low = 1
+        var high = slots.size - 2
+
+        while (low <= high) {
+            if (low <= high) byeSlots.add(slots[high--])
+            if (low <= high) byeSlots.add(slots[low++])
+        }
+
+        if (byeIndex >= byeSlots.size) return -1
+
+        val slotIndex = byeSlots[byeIndex]
+        return slotIndex * 2
+    }
+
+    fun processByes(generatedSets: List<MatchSet>): List<MatchSet> {
+        val updatedSets = generatedSets.toMutableList()
+
+        val setMap = updatedSets.associateBy { it.setId }.toMutableMap()
+
+        for (currentSet in generatedSets) {
+            if (currentSet.player1 == null && currentSet.player2 == null) {
+                continue
+            }
+
+            val advancingPlayer: Player? = when {
+
+                currentSet.player1 != null && currentSet.player2 == null -> {
+                    Log.d("ByeProcessor", "Set ${currentSet.setId}: ${currentSet.player1?.name} avanza por BYE.")
+                    currentSet.player1
+                }
+                currentSet.player1 == null && currentSet.player2 != null -> {
+                    Log.d("ByeProcessor", "Set ${currentSet.setId}: ${currentSet.player2?.name} avanza por BYE.")
+                    currentSet.player2
+                }
+                else -> continue
+            }
+
+            if (advancingPlayer != null) {
+                val parentId = currentSet.parentSetId
+
+                if (parentId != null) {
+                    val parentSet = setMap[parentId]
+
+                    if (parentSet != null) {
+                        val isFirstChild = (currentSet.setId % 2 != 0)
+
+                        val newParentSet = if (isFirstChild) {
+                            parentSet.copy(player1 = advancingPlayer)
+                        } else {
+                            parentSet.copy(player2 = advancingPlayer)
+                        }
+
+                        setMap[parentId] = newParentSet
+                        updatedSets[updatedSets.indexOfFirst { it.setId == parentId }] = newParentSet
+
+                        Log.d("ByeProcessor", "Set ${parentId} actualizado con ${advancingPlayer.name}.")
+                    }
+                }
+            }
+        }
+
+        return updatedSets.toList()
+    }
 }

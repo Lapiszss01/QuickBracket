@@ -112,6 +112,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             return
         }
 
+        val currentSet = bracketSets.find { it.setId == matchSet.setId }
         val parentSet = bracketSets.find { it.setId == parentSetId }
         if (parentSet == null) {
             Log.e("SetResult", "Error: No se encontró el set padre con ID $parentSetId")
@@ -121,6 +122,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
         when {
             parentSet.player1 == null -> {
                 parentSet.player1 = winnerPlayer.copy()
+
             }
             parentSet.player2 == null -> {
                 parentSet.player2 = winnerPlayer.copy()
@@ -130,6 +132,8 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             }
         }
 
+        currentSet?.winner = winnerPlayer
+        currentSet?.isFinished = true
 
         val roundAdapter = binding.bracketContainerRecycler.adapter as? RoundAdapter
         roundAdapter?.notifyDataSetChanged()

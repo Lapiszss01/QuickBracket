@@ -67,7 +67,6 @@ class CreateBracketFragment : Fragment() {
         //Create button
         binding.createBracketButton.setOnClickListener {
             val players = getRegisteredPlayerNames()
-
             bracketViewModel.createBracket(players)
         }
         observeViewModel()

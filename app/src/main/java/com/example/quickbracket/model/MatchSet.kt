@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 @Parcelize
 data class MatchSet(
     val setId: Int,
+    val setLetter: String? = "",
     var roundName: String,
     //val path: BracketPath = BracketPath.WINNERS,
     val parentSetId: Int?,

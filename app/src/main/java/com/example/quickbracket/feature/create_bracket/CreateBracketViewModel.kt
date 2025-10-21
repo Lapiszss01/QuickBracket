@@ -2,6 +2,7 @@ package com.example.quickbracket.feature.create_bracket
 
 import android.app.Application
 import android.util.Log
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -54,164 +55,13 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
                 val finalBracketSets = processByes(initialBracketSets)
                 _generatedBracketSets.postValue(finalBracketSets)
             } catch (e: IllegalArgumentException) {
-                Log.e("Bracket", "Error de límite o lógica: ${e.message}")
-                _statusMessage.postValue("Error en la creación del bracket: ${e.message}")
+                Log.e("Bracket", "Logic error: ${e.message}")
+                _statusMessage.postValue("Error in bracket creation: ${e.message}")
             } catch (e: OutOfMemoryError) {
-                Log.e("Bracket", "Se agotó la memoria: ${e.message}")
-                _statusMessage.postValue("Error de memoria. Demasiados jugadores.")
+                Log.e("Bracket", "Out of memory: ${e.message}")
+                _statusMessage.postValue("Memory error, lower de number of players.")
             }
         }
-    }
-
-    fun generateSingleEliminationBracket(players: List<Player>): List<MatchSet> {
-
-        val playerCount = players.size
-        if (playerCount <= 1) return emptyList()
-
-        val MAX_PLAYERS = 4096
-        if (playerCount > MAX_PLAYERS) {
-            throw IllegalArgumentException("Máximo de $MAX_PLAYERS jugadores permitido.")
-        }
-
-        var bracketSize = 1
-        while (bracketSize < playerCount) {
-            bracketSize *= 2
-        }
-
-        val numByes = bracketSize - playerCount
-        val sortedPlayers = players.sortedBy { it.seed }
-        val playersWithBye = sortedPlayers.take(numByes)
-        val playersInR1 = sortedPlayers.drop(numByes)
-
-        val r1Order = MutableList<Player?>(bracketSize) { null }
-
-        // 1. Insertar a los jugadores con BYE en su posición y el slot de su oponente como null
-        for (i in 0 until numByes) {
-            val playerWithBye = playersWithBye[i]
-            val pairIndex = getByePosition(i, bracketSize)
-
-            // Colocamos el jugador en el slot par y su oponente nulo en el impar
-            r1Order[pairIndex] = playerWithBye
-            r1Order[pairIndex + 1] = null
-        }
-
-        // 2. Generar la secuencia de emparejamientos para R1 (Seed 4 vs Seed 5, etc.)
-        val r1MatchupOrder = mutableListOf<Player?>()
-        var low = 0
-        var high = playersInR1.size - 1
-
-        while (low <= high) {
-            if (low < high) {
-                r1MatchupOrder.add(playersInR1[low])
-                r1MatchupOrder.add(playersInR1[high])
-            } else if (low == high) {
-                r1MatchupOrder.add(playersInR1[low])
-            }
-            low++
-            high--
-        }
-
-        // 3. Asignar directamente los jugadores de R1 a los slots restantes (pares de nulls)
-        var r1MatchupIndex = 0
-        for (i in 0 until bracketSize step 2) {
-            // Buscamos un par de slots que sean AMBOS nulos (indicando un partido de R1 sin BYE)
-            if (r1Order[i] == null && r1Order[i + 1] == null) {
-
-                if (r1MatchupIndex < r1MatchupOrder.size) {
-                    r1Order[i] = r1MatchupOrder[r1MatchupIndex++]
-                }
-                if (r1MatchupIndex < r1MatchupOrder.size) {
-                    r1Order[i + 1] = r1MatchupOrder[r1MatchupIndex++]
-                }
-            }
-        }
-
-        val allSetsAsc = mutableListOf<MatchSet>()
-        val r1Matches = mutableListOf<Player?>()
-
-        for (i in 0 until bracketSize step 2) {
-            val p1 = r1Order[i]
-            val p2 = r1Order[i + 1]
-
-            r1Matches.add(p1)
-            r1Matches.add(p2)
-        }
-
-        var nextSetIdAsc = 1
-        var playerIndexR1 = 0
-        var setsInCurrentRoundAsc = bracketSize / 2
-        var roundCounterAsc = 1
-
-        while (setsInCurrentRoundAsc >= 1) {
-            val setsEndIdAsc = nextSetIdAsc + setsInCurrentRoundAsc - 1
-            val nextRoundSetsAsc = setsInCurrentRoundAsc / 2
-            val isFinalRound = (nextRoundSetsAsc == 0)
-            val roundNameAsc = if (isFinalRound) "Final" else "Ronda $roundCounterAsc"
-
-            for (i in 0 until setsInCurrentRoundAsc) {
-                val currentIdAsc = nextSetIdAsc++
-
-                var p1: Player? = null
-                var p2: Player? = null
-
-                if (roundCounterAsc == 1) {
-                    if (playerIndexR1 < r1Matches.size) {
-                        p1 = r1Matches[playerIndexR1++]
-                    }
-                    if (playerIndexR1 < r1Matches.size) {
-                        p2 = r1Matches[playerIndexR1++]
-                    }
-                }
-
-                val parentIdAsc: Int? = if (!isFinalRound) {
-                    setsEndIdAsc + 1 + (i / 2)
-                } else {
-                    null
-                }
-
-                allSetsAsc.add(MatchSet(
-                    setId = currentIdAsc,
-                    roundName = roundNameAsc,
-                    parentSetId = parentIdAsc,
-                    player1 = p1,
-                    player2 = p2
-                ))
-            }
-
-            setsInCurrentRoundAsc = nextRoundSetsAsc
-            roundCounterAsc++
-        }
-
-        val totalSetsGenerated = allSetsAsc.size
-        var setsInRoundToRename = 1
-        var setsProcessed = 0
-        var setsRemaining = totalSetsGenerated
-        val totalRounds = roundCounterAsc - 1
-
-        while (setsRemaining > 0) {
-            val numSetsInThisRound = minOf(setsInRoundToRename, setsRemaining)
-            val currentRoundIndex = totalRounds - (setsProcessed / setsInRoundToRename)
-
-            val newRoundName = when (setsInRoundToRename) {
-                1 -> "Final"
-                2 -> "Semifinal"
-                4 -> "Cuartos de Final"
-                else -> "Ronda $currentRoundIndex"
-            }
-
-            val startIndex = setsRemaining - numSetsInThisRound
-
-            for (i in startIndex until setsRemaining) {
-                val currentSet = allSetsAsc[i]
-                allSetsAsc[i] = currentSet.copy(roundName = newRoundName)
-            }
-
-            setsRemaining = startIndex
-            setsProcessed += numSetsInThisRound
-            setsInRoundToRename *= 2
-        }
-
-        return allSetsAsc.toList()
     }
 
     private fun getByePosition(byeIndex: Int, bracketSize: Int): Int {
@@ -240,28 +90,260 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
         return slotIndex * 2
     }
 
+    fun generateSingleEliminationBracket(players: List<Player>): List<MatchSet> {
+
+        val playerCount = players.size
+        if (playerCount <= 1) return emptyList()
+
+        val MAX_PLAYERS = 4096
+        if (playerCount > MAX_PLAYERS) {
+            throw IllegalArgumentException("Máx of $MAX_PLAYERS players allowed.")
+        }
+
+        var bracketSize = 1
+        while (bracketSize < playerCount) {
+            bracketSize *= 2
+        }
+
+        val numByes = bracketSize - playerCount
+        val sortedPlayers = players.sortedBy { it.seed }
+        val playersWithBye = sortedPlayers.take(numByes)
+        val playersInR1 = sortedPlayers.drop(numByes)
+
+        val r1Order = MutableList<Player?>(bracketSize) { null }
+
+        // Insers players with BYE
+        for (i in 0 until numByes) {
+            val playerWithBye = playersWithBye[i]
+            val pairIndex = getByePosition(i, bracketSize)
+            r1Order[pairIndex] = playerWithBye
+            r1Order[pairIndex + 1] = null
+        }
+
+        // Generace R1 marchups
+        val r1MatchupOrder = mutableListOf<Player?>()
+        var low = 0
+        var high = playersInR1.size - 1
+
+        while (low <= high) {
+            if (low < high) {
+                r1MatchupOrder.add(playersInR1[low])
+                r1MatchupOrder.add(playersInR1[high])
+            } else if (low == high) {
+                r1MatchupOrder.add(playersInR1[low])
+            }
+            low++
+            high--
+        }
+
+        // Assign players without bye to not fully sets
+        var r1MatchupIndex = 0
+        for (i in 0 until bracketSize step 2) {
+            if (r1Order[i] == null && r1Order[i + 1] == null) {
+                if (r1MatchupIndex < r1MatchupOrder.size) {
+                    r1Order[i] = r1MatchupOrder[r1MatchupIndex++]
+                }
+                if (r1MatchupIndex < r1MatchupOrder.size) {
+                    r1Order[i + 1] = r1MatchupOrder[r1MatchupIndex++]
+                }
+            }
+        }
+
+        val r1PlayersInOrder = mutableListOf<Player?>()
+        for (i in 0 until bracketSize step 2) {
+            r1PlayersInOrder.add(r1Order[i])
+            r1PlayersInOrder.add(r1Order[i + 1])
+        }
+
+        val allSets = mutableListOf<MatchSet>()
+        val roundSetIdsInSeedingOrder = mutableMapOf<Int, List<Int>>()
+
+        var nextSetIdAsc = 1
+        var playerIndexR1 = 0
+        var setsInCurrentRound = bracketSize / 2
+        var roundCounter = 1
+
+        var currentRoundSetIds = mutableListOf<Int>()
+
+        var previousRoundSetIds = (1..setsInCurrentRound).toList()
+
+        while (setsInCurrentRound >= 1) {
+            val nextRoundSets = setsInCurrentRound / 2
+            val isFinalRound = (nextRoundSets == 0)
+            val roundName = if (isFinalRound) "Final" else "Ronda $roundCounter"
+
+            currentRoundSetIds.clear()
+            for (i in 0 until setsInCurrentRound) {
+                val currentId = nextSetIdAsc++
+                currentRoundSetIds.add(currentId)
+
+                var p1: Player? = null
+                var p2: Player? = null
+
+                if (roundCounter == 1) {
+                    if (playerIndexR1 < r1PlayersInOrder.size) {
+                        p1 = r1PlayersInOrder[playerIndexR1++]
+                    }
+                    if (playerIndexR1 < r1PlayersInOrder.size) {
+                        p2 = r1PlayersInOrder[playerIndexR1++]
+                    }
+                }
+
+                allSets.add(MatchSet(
+                    setId = currentId,
+                    roundName = roundName,
+                    parentSetId = null,
+                    player1 = p1,
+                    player2 = p2
+                ))
+            }
+
+            if (roundCounter > 1) {
+                roundSetIdsInSeedingOrder[roundCounter - 1] = previousRoundSetIds.toList()
+            } else {
+                roundSetIdsInSeedingOrder[1] = currentRoundSetIds.toList()
+            }
+
+            val previousSetsMap = allSets.associateBy { it.setId }
+
+            for (i in 0 until setsInCurrentRound) {
+                val parentId = currentRoundSetIds[i]
+
+                val prevSet1Id = previousRoundSetIds.getOrNull(i * 2)
+                if (prevSet1Id != null) {
+                    val prevSet1Index = allSets.indexOfFirst { it.setId == prevSet1Id }
+                    if (prevSet1Index != -1) {
+                        val currentSet = allSets[prevSet1Index]
+                        allSets[prevSet1Index] = currentSet.copy(parentSetId = parentId)
+                    }
+                }
+
+                val prevSet2Id = previousRoundSetIds.getOrNull(i * 2 + 1)
+                if (prevSet2Id != null) {
+                    val prevSet2Index = allSets.indexOfFirst { it.setId == prevSet2Id }
+                    if (prevSet2Index != -1) {
+                        val currentSet = allSets[prevSet2Index]
+                        allSets[prevSet2Index] = currentSet.copy(parentSetId = parentId)
+                    }
+                }
+            }
+
+            val nextRoundSetIdsInOrder = mutableListOf<Int>()
+
+            if (nextRoundSets == 0) {
+                previousRoundSetIds = currentRoundSetIds.toList()
+            } else if (roundCounter == 1) {
+                if (currentRoundSetIds.size >= 4) {
+                    val numMatches = currentRoundSetIds.size
+                    val lowQuarter = currentRoundSetIds.take(numMatches / 4)
+                    val highQuarter = currentRoundSetIds.drop(numMatches / 4 * 3)
+                    val midLowQuarter = currentRoundSetIds.drop(numMatches / 4).take(numMatches / 4)
+                    val midHighQuarter = currentRoundSetIds.drop(numMatches / 4 * 2).take(numMatches / 4)
+
+                    val reordered = mutableListOf<Int>()
+                    for (i in 0 until lowQuarter.size) {
+                        reordered.add(lowQuarter[i])
+                        reordered.add(midHighQuarter[i])
+                        reordered.add(midLowQuarter[i])
+                        reordered.add(highQuarter[i])
+                    }
+                    previousRoundSetIds = reordered
+                } else {
+                    previousRoundSetIds = currentRoundSetIds.toList()
+                }
+
+            } else {
+
+                var lowIdIndex = 0
+                var highIdIndex = currentRoundSetIds.size - 1
+
+                while (lowIdIndex <= highIdIndex) {
+                    if (lowIdIndex < highIdIndex) {
+                        nextRoundSetIdsInOrder.add(currentRoundSetIds[lowIdIndex])
+                        nextRoundSetIdsInOrder.add(currentRoundSetIds[highIdIndex])
+                    } else if (lowIdIndex == highIdIndex) {
+                        nextRoundSetIdsInOrder.add(currentRoundSetIds[lowIdIndex])
+                    }
+                    lowIdIndex++
+                    highIdIndex--
+                }
+                previousRoundSetIds = nextRoundSetIdsInOrder
+            }
+
+            setsInCurrentRound = nextRoundSets
+            roundCounter++
+        }
+
+        roundSetIdsInSeedingOrder[roundCounter - 1] = previousRoundSetIds.toList()
+
+        val totalSetsGenerated = allSets.size
+        var setsInRoundToRename = 1
+        var setsProcessed = 0
+        var setsRemaining = totalSetsGenerated
+        val totalRounds = roundCounter - 1
+
+        val setsInRoundMap = allSets.groupBy { it.roundName }
+        val roundNamesByCount = setsInRoundMap.keys.sortedBy { setsInRoundMap[it]!!.size }
+
+        val renamedSets = allSets.toMutableList()
+
+        while (setsRemaining > 0) {
+            val numSetsInThisRound = minOf(setsInRoundToRename, setsRemaining)
+            val currentRoundIndex = totalRounds - (setsProcessed / setsInRoundToRename)
+
+            val newRoundName = when (setsInRoundToRename) {
+                1 -> "Final"
+                2 -> "Semifinal"
+                4 -> "Cuartos de Final"
+                else -> "Ronda ${currentRoundIndex}"
+            }
+
+            val startIndex = setsRemaining - numSetsInThisRound
+
+            for (i in startIndex until setsRemaining) {
+                val currentSet = renamedSets[i]
+                renamedSets[i] = currentSet.copy(roundName = newRoundName)
+            }
+
+            setsRemaining = startIndex
+            setsProcessed += numSetsInThisRound
+            setsInRoundToRename *= 2
+        }
+
+
+        val finalOrderedSets = mutableListOf<MatchSet>()
+        val allSetsMap = renamedSets.associateBy { it.setId }
+
+        for (roundIndex in 1 until roundCounter) {
+            val orderedIds = roundSetIdsInSeedingOrder[roundIndex] ?: emptyList()
+            orderedIds.forEach { setId ->
+                allSetsMap[setId]?.let {
+                    finalOrderedSets.add(it)
+                }
+            }
+        }
+
+        return finalOrderedSets.toList()
+    }
+
     fun processByes(generatedSets: List<MatchSet>): List<MatchSet> {
-        val updatedSets = generatedSets.toMutableList()
 
-        val setMap = updatedSets.associateBy { it.setId }.toMutableMap()
+        val setsWithInitialLetters = generatedSets.mapIndexed { index, matchSet ->
+            matchSet
+        }
 
-        for (currentSet in generatedSets) {
-            if (currentSet.player1 == null && currentSet.player2 == null) {
-                continue
-            }
+        val setMap = setsWithInitialLetters.associateBy { it.setId }.toMutableMap()
+        val setsToRemoveIds = mutableSetOf<Int>()
 
-            val advancingPlayer: Player? = when {
+        for (currentSet in setsWithInitialLetters) {
 
-                currentSet.player1 != null && currentSet.player2 == null -> {
-                    Log.d("ByeProcessor", "Set ${currentSet.setId}: ${currentSet.player1?.name} avanza por BYE.")
-                    currentSet.player1
-                }
-                currentSet.player1 == null && currentSet.player2 != null -> {
-                    Log.d("ByeProcessor", "Set ${currentSet.setId}: ${currentSet.player2?.name} avanza por BYE.")
-                    currentSet.player2
-                }
-                else -> continue
-            }
+            if (setsToRemoveIds.contains(currentSet.setId)) continue
+
+            val isByeSet = (currentSet.player1 != null && currentSet.player2 == null) ||
+                    (currentSet.player1 == null && currentSet.player2 != null)
+
+            if (!isByeSet) continue
+            val advancingPlayer: Player? = currentSet.player1 ?: currentSet.player2
 
             if (advancingPlayer != null) {
                 val parentId = currentSet.parentSetId
@@ -270,23 +352,26 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
                     val parentSet = setMap[parentId]
 
                     if (parentSet != null) {
-                        val isFirstChild = (currentSet.setId % 2 != 0)
-
-                        val newParentSet = if (isFirstChild) {
-                            parentSet.copy(player1 = advancingPlayer)
-                        } else {
-                            parentSet.copy(player2 = advancingPlayer)
+                        val newParentSet = when {
+                            parentSet.player1 == null -> parentSet.copy(player1 = advancingPlayer)
+                            parentSet.player2 == null -> parentSet.copy(player2 = advancingPlayer)
+                            else -> parentSet
                         }
 
                         setMap[parentId] = newParentSet
-                        updatedSets[updatedSets.indexOfFirst { it.setId == parentId }] = newParentSet
-
-                        Log.d("ByeProcessor", "Set ${parentId} actualizado con ${advancingPlayer.name}.")
+                        setsToRemoveIds.add(currentSet.setId)
                     }
                 }
             }
         }
 
-        return updatedSets.toList()
+        val finalSetsWithoutByes = setMap.values
+            .filter { !setsToRemoveIds.contains(it.setId) }
+        return finalSetsWithoutByes.mapIndexed { index, matchSet ->
+            val newSetLetter = ('A' + index).toString()
+            matchSet.copy(setLetter = newSetLetter)
+        }
     }
+
+
 }

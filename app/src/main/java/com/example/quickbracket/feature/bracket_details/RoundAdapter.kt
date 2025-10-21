@@ -73,7 +73,6 @@ class RoundAdapter(
             lastRoundIndex: Int
         ) {
             binding.roundTitle.text = roundName
-            // Aseguramos que el contenedor esté vacío antes de añadir las vistas.
             binding.setsVerticalContainer.removeAllViews()
 
             val baseSpacing = resources.getDimensionPixelSize(R.dimen.set_base_spacing)
@@ -89,14 +88,12 @@ class RoundAdapter(
             val verticalSpace = baseSpacing * roundFactor
 
             val isFirstRound = layoutPosition == 0
-            val isLastRound = layoutPosition == lastRoundIndex // <-- Nuevo: Comprueba si es la Final
-
-            // *** CAMBIO CLAVE 1: Anular el offset inicial para la Final ***
-            // El offset solo se aplica si NO es la última ronda, y si no es la primera.
+            val isLastRound = layoutPosition == lastRoundIndex
             val initialOffset = if (!isLastRound && layoutPosition > 0) verticalSpace / 2 else 0
 
-            // LÓGICA CLAVE: FILTRAR BYES DE LA PRIMERA RONDA
-            val visibleSets = roundSets.filterNot { matchSet ->
+            //Filter rounds 1 so it doest show blank sets
+            val visibleSets = roundSets
+            /*val visibleSets = roundSets.filterNot { matchSet ->
                 if (isFirstRound) {
                     // Condición de Bye: Un jugador está presente (no nulo) y el otro está ausente (nulo)
                     val isBye = (matchSet.player1 != null && matchSet.player2 == null) ||
@@ -109,7 +106,7 @@ class RoundAdapter(
                 } else {
                     false
                 }
-            }
+            }*/
 
             // Usamos una lista temporal para gestionar las vistas y espaciadores a añadir
             val viewsToAdd = mutableListOf<View>()
@@ -151,6 +148,8 @@ class RoundAdapter(
                     "${matchSet.player2?.seed ?: ""} - ${matchSet.player2?.name}"
                 }
                 setBinding.player2Name.text = player2NameText
+
+                setBinding.tvsetId.text = matchSet.setLetter
 
                 if (isFinished && winner?.id == matchSet.player2?.id) {
                     setBinding.player2Name.setTypeface(null, Typeface.BOLD)

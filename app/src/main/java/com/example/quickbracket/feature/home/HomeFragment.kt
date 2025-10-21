@@ -8,12 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.quickbracket.databinding.FragmentHomeBinding
 import com.example.quickbracket.feature.create_bracket.CreateBracketViewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.quickbracket.R
 import com.example.quickbracket.model.Bracket
+import com.example.quickbracket.model.Player
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -95,4 +97,6 @@ class HomeFragment : Fragment(), BracketActionListener {
     override fun onDeleteBracket(bracket: Bracket) {
         homeViewModel.deleteBracket(bracket)
     }
+
+
 }

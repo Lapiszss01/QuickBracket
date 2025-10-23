@@ -162,11 +162,10 @@ class RoundAdapter(
                     listener.onMatchSetClicked(matchSet)
                 }
 
-                viewsToAdd.add(setBinding.root) // Añadimos el set card
+                viewsToAdd.add(setBinding.root)
 
                 val isLastVisibleSet = index == visibleSets.lastIndex
 
-                // Solo añadimos espaciador entre sets si NO es el último set visible
                 if (!isLastVisibleSet) {
                     val spacer = View(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
@@ -178,8 +177,7 @@ class RoundAdapter(
                 }
             }
 
-            // *** CAMBIO CLAVE 2: Anular el offset final para la Final ***
-            if (initialOffset > 0) { // Si hay offset inicial, también debe haber uno final (si no es la Final)
+            if (initialOffset > 0) {
                 val finalSpacer = View(itemView.context).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -189,15 +187,12 @@ class RoundAdapter(
                 viewsToAdd.add(finalSpacer)
             }
 
-            // Añadimos todas las vistas recolectadas al contenedor
             viewsToAdd.forEach {
                 binding.setsVerticalContainer.addView(it)
             }
 
-            // Asegura que el contenedor se centre verticalmente dentro de su celda
             binding.root.gravity = android.view.Gravity.CENTER
 
-            // Si es la Final, y solo hay 1 set, le damos al LinearLayout una gravedad de CENTRO también
             if (isLastRound && visibleSets.size == 1) {
                 binding.setsVerticalContainer.gravity = android.view.Gravity.CENTER_VERTICAL
             }

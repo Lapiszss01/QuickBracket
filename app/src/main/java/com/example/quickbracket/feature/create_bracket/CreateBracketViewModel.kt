@@ -31,8 +31,14 @@ class CreateBracketViewModel(application: Application) : AndroidViewModel(applic
     val generatedBracketSets: LiveData<List<MatchSet>> = _generatedBracketSets
 
     fun saveNewBracket(bracket: Bracket, playerCount: String) {
-        if (bracket.name.isBlank() || bracket.type.isBlank() || playerCount.toInt() != bracket.entrants.size) {
+        if (bracket.name.isBlank() || bracket.type.isBlank()) {
             _statusMessage.value = "Must not leave any field blank."
+            return
+        } else if(playerCount.toInt() <= 1){
+            _statusMessage.value = "Must have at least 2 players"
+            return
+        } else if(playerCount.toInt() != bracket.entrants.size){
+            _statusMessage.value = "Fill all the players fields"
             return
         }
 

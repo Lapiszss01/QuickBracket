@@ -80,6 +80,7 @@ class HomeFragment : Fragment(), BracketActionListener {
         homeViewModel.statusMessage.observe(viewLifecycleOwner) { message ->
             if (!message.isNullOrEmpty()) {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                homeViewModel.clearStatusMessage()
             }
         }
     }

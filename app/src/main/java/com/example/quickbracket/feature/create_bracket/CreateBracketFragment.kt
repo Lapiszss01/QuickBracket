@@ -87,19 +87,17 @@ class CreateBracketFragment : Fragment() {
         }
 
         bracketViewModel.generatedBracketSets.observe(viewLifecycleOwner) { bracketSets ->
-            if (bracketSets.isNotEmpty()) {
-                val bracketName = binding.bracketNameEditText.text.toString()
-                val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
-                val players = getRegisteredPlayerNames()
+            val bracketName = binding.bracketNameEditText.text.toString()
+            val bracketType = binding.bracketTypeAutoCompleteTextView.text.toString()
+            val players = getRegisteredPlayerNames()
 
-                val finalBracket = Bracket(
-                    name = bracketName,
-                    type = bracketType,
-                    sets = bracketSets,
-                    entrants = players
-                )
-                bracketViewModel.saveNewBracket(finalBracket, binding.etPlayerCount.text.toString())
-            }
+            val finalBracket = Bracket(
+                name = bracketName,
+                type = bracketType,
+                sets = bracketSets,
+                entrants = players
+            )
+            bracketViewModel.saveNewBracket(finalBracket, binding.etPlayerCount.text.toString())
         }
     }
 

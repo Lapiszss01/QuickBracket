@@ -29,4 +29,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun clearStatusMessage() {
+        _statusMessage.value = ""
+    }
 }

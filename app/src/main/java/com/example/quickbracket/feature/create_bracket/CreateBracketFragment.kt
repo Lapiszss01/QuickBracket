@@ -136,6 +136,10 @@ class CreateBracketFragment : Fragment() {
             if (!playerName.isNullOrEmpty()) {
                 val player = Player(name = playerName, seed = seed)
                 players.add(player)
+            } else{
+                val randomName = (1..4).map { ('a'..'z').random() }.joinToString("")
+                val player = Player(name = randomName, seed = seed)
+                players.add(player)
             }
         }
         return players

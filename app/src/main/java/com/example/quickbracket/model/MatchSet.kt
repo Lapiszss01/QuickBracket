@@ -9,12 +9,17 @@ import kotlinx.serialization.Serializable
 @Parcelize
 data class MatchSet(
     val setId: Int,
+    val nextMatchId: Int?,
+    val loserNextMatchId: Int?,
+
     val setLetter: String? = "",
     var roundName: String,
-    //val path: BracketPath = BracketPath.WINNERS,
-    val parentSetId: Int?,
+
     var player1: Player? = null,
     var player2: Player? = null,
+    var status: String? = "",
+
+    //val path: BracketPath = BracketPath.WINNERS,
     var isFinished: Boolean? = false,
     var winner: Player? = null
 ) : Parcelable

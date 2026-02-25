@@ -48,6 +48,9 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
         super.onViewCreated(view, savedInstanceState)
 
         val bracket = args.bracket
+
+        binding.tournamentNameTv.text = bracket.name
+
         Log.d("BracketDetails", "BracketName: ${bracket.name} \n BracketType: ${bracket.type}")
         for (set in bracket.sets){
             Log.d("BracketDetails", "$set")
@@ -106,7 +109,7 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
             return
         }
 
-        val parentSetId = matchSet.parentSetId
+        val parentSetId = matchSet.nextMatchId
         if (parentSetId == null) {
             Log.d("SetResult", "Set ${matchSet.setId} es el último. Fin del recorrido.")
             return
@@ -144,7 +147,6 @@ class BracketDetailsFragment : Fragment(), OnMatchSetClickListener {
     }
 
     fun winnerToast(context: Context, nombreJugador: String) {
-
         val mensaje = "¡Felicidades! ${nombreJugador} ha ganado la bracket."
         Toast.makeText(context, mensaje, Toast.LENGTH_LONG).show()
     }

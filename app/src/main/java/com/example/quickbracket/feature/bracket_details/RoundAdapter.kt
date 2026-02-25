@@ -22,11 +22,8 @@ class RoundAdapter(
     private val listener: OnMatchSetClickListener
 ) : RecyclerView.Adapter<RoundAdapter.RoundViewHolder>() {
 
-    // Necesitas el contexto para inflar y usar recursos, lo obtenemos del parent
     private lateinit var inflater: LayoutInflater
     private lateinit var resources: Resources
-
-    // Lista de nombres de rondas para acceder ordenadamente
     private val roundNames = setsByRound.keys.toList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoundViewHolder {
@@ -42,11 +39,11 @@ class RoundAdapter(
         val roundName = roundNames[position]
         val roundSets = setsByRound[roundName] ?: emptyList()
 
-        // Obtenemos la cantidad de sets en la ronda anterior (la que alimenta a esta)
+        // Obtenemos la cantidad de sets en la ronda anterior
         val setsInPreviousRound = if (position > 0) {
             setsByRound[roundNames[position - 1]]?.size ?: 0
         } else {
-            0 // Primera ronda, no hay sets anteriores
+            0
         }
 
         holder.bind(
@@ -93,20 +90,6 @@ class RoundAdapter(
 
             //Filter rounds 1 so it doest show blank sets
             val visibleSets = roundSets
-            /*val visibleSets = roundSets.filterNot { matchSet ->
-                if (isFirstRound) {
-                    // Condición de Bye: Un jugador está presente (no nulo) y el otro está ausente (nulo)
-                    val isBye = (matchSet.player1 != null && matchSet.player2 == null) ||
-                            (matchSet.player1 == null && matchSet.player2 != null)
-
-                    if (isBye) {
-                        Log.d("RoundAdapter", "Skipping first-round bye for set: ${matchSet.setId}")
-                    }
-                    isBye
-                } else {
-                    false
-                }
-            }*/
 
             // Usamos una lista temporal para gestionar las vistas y espaciadores a añadir
             val viewsToAdd = mutableListOf<View>()
@@ -126,7 +109,12 @@ class RoundAdapter(
 
                 val isFinished = matchSet.isFinished == true
                 val winner = if (isFinished) matchSet.winner else null
+                var ready : Boolean
 
+                if(!matchSet.player1?.name.isNullOrBlank() && !matchSet.player2?.name.isNullOrBlank()) {
+                    matchSet.status = "ready"
+                    setBinding.setCheckBox.isChecked = true
+                }
                 // Player 1 setup
                 val player1NameText = if (matchSet.player1?.name.isNullOrBlank()) {
                     "TBD"
@@ -157,10 +145,14 @@ class RoundAdapter(
                     setBinding.player2Name.setTypeface(null, Typeface.NORMAL)
                 }
 
-                setBinding.root.setOnClickListener {
-                    Log.d("SetCLick",matchSet.toString())
-                    listener.onMatchSetClicked(matchSet)
+
+                if(matchSet.status == "ready"){
+                    setBinding.root.setOnClickListener {
+                        Log.d("SetCLick",matchSet.toString())
+                        listener.onMatchSetClicked(matchSet)
+                    }
                 }
+
 
                 viewsToAdd.add(setBinding.root)
 

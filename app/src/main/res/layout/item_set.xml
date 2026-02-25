@@ -43,4 +43,15 @@
 
     </LinearLayout>
 
+    <CheckBox
+        android:id="@+id/set_check_box"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_gravity="center_vertical"
+        android:paddingEnd="8dp"
+        android:clickable="false"
+        />
+
+
 </LinearLayout>

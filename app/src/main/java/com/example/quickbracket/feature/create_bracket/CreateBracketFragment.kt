@@ -33,7 +33,6 @@ class CreateBracketFragment : Fragment() {
 
     enum class BracketType {
         SingleElimination,
-        //TODO: Next bracket types
         //DoubleElimination,
         //RoundRobin
     }
@@ -49,6 +48,7 @@ class CreateBracketFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        //Bracket type dropdown list
         val bracketTypes = BracketType.entries.map { it.name }
         val adapter = ArrayAdapter(
             requireContext(),
@@ -57,6 +57,7 @@ class CreateBracketFragment : Fragment() {
         )
         binding.bracketTypeAutoCompleteTextView.setAdapter(adapter)
 
+        //Player count edittext
         val playerCountEditText = binding.etPlayerCount as? TextInputEditText
         playerCountEditText?.doAfterTextChanged { editable ->
             val playerCountText = editable?.toString()
@@ -67,12 +68,16 @@ class CreateBracketFragment : Fragment() {
         //Create button
         binding.createBracketButton.setOnClickListener {
             val players = getRegisteredPlayerNames()
-            bracketViewModel.createBracket(players)
+            bracketViewModel.createBracket(
+                players = players,
+                type = binding.bracketTypeAutoCompleteTextView.text.toString()
+            )
         }
         observeViewModel()
     }
 
     private fun observeViewModel() {
+
         bracketViewModel.statusMessage.observe(viewLifecycleOwner) { message ->
             if (message.isNotEmpty()) {
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
